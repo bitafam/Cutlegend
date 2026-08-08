@@ -1,0 +1,6 @@
+{
+  "name": "Stone Cut Optimizer",
+  "description": "An intelligent layout optimizer and vein-matching engine for marble, granite, and quartz slabs.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
