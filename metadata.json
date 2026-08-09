@@ -1,6 +1,6 @@
 {
-  "name": "Stone Cut Optimizer",
-  "description": "An intelligent layout optimizer and vein-matching engine for marble, granite, and quartz slabs.",
+  "name": "بهینه‌ساز برش سنگ",
+  "description": "موتور هوشمند بهینه‌سازی چیدمان برش و تطبیق رگه‌های سنگ مرمر، گرانیت و کوارتز.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

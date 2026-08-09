@@ -25,11 +25,11 @@ class StoneCutViewModel : ViewModel() {
 
     private val _parts = MutableStateFlow<List<Part>>(
         listOf(
-            Part(id = "A", name = "Main Countertop", length = 600f, width = 1800f, allowRotation = false),
-            Part(id = "B", name = "Matching Backsplash", length = 300f, width = 1800f, allowRotation = false, matchAdjacentTo = "A"),
-            Part(id = "C", name = "Side Apron Face", length = 150f, width = 600f, allowRotation = true),
-            Part(id = "D", name = "Island End Cap", length = 600f, width = 1200f, allowRotation = false),
-            Part(id = "E", name = "Cutting Board Cut", length = 300f, width = 400f, allowRotation = true)
+            Part(id = "A", name = "صفحه کانتر اصلی", length = 600f, width = 1800f, allowRotation = false),
+            Part(id = "B", name = "دیوارپوش هماهنگ پشت‌کار", length = 300f, width = 1800f, allowRotation = false, matchAdjacentTo = "A"),
+            Part(id = "C", name = "پیشانی کانتر کناری", length = 150f, width = 600f, allowRotation = true),
+            Part(id = "D", name = "پوشش انتهایی کانتر جزیره", length = 600f, width = 1200f, allowRotation = false),
+            Part(id = "E", name = "تخته کار سنگی توکار", length = 300f, width = 400f, allowRotation = true)
         )
     )
     val parts: StateFlow<List<Part>> = _parts.asStateFlow()
@@ -117,22 +117,22 @@ class StoneCutViewModel : ViewModel() {
 
     fun loadLShapedCountertopTemplate() {
         _parts.value = listOf(
-            Part(id = "A", name = "Main Slab A", length = 600f, width = 1800f, allowRotation = false),
-            Part(id = "B", name = "L-Turn Slab B", length = 600f, width = 1200f, allowRotation = false, matchAdjacentTo = "A"),
-            Part(id = "C", name = "Tall Backsplash C", length = 300f, width = 1800f, allowRotation = false, matchAdjacentTo = "B"),
-            Part(id = "D", name = "Independent Trim D", length = 150f, width = 900f, allowRotation = true),
-            Part(id = "E", name = "Corner Insert E", length = 200f, width = 200f, allowRotation = true)
+            Part(id = "A", name = "اسلب اصلی الف", length = 600f, width = 1800f, allowRotation = false),
+            Part(id = "B", name = "اسلب پیشانی ال‌شکل ب", length = 600f, width = 1200f, allowRotation = false, matchAdjacentTo = "A"),
+            Part(id = "C", name = "قرنیز دیواری بلند ج", length = 300f, width = 1800f, allowRotation = false, matchAdjacentTo = "B"),
+            Part(id = "D", name = "نوار برش تزیینی د", length = 150f, width = 900f, allowRotation = true),
+            Part(id = "E", name = "نگین سنگی تزیینی ه", length = 200f, width = 200f, allowRotation = true)
         )
         triggerOptimization()
     }
 
     fun loadWallCladdingTemplate() {
         _parts.value = listOf(
-            Part(id = "A", name = "Left Wall Plate", length = 1200f, width = 1400f, allowRotation = false),
-            Part(id = "B", name = "Right Bookmatch Plate", length = 1200f, width = 1400f, allowRotation = false, matchAdjacentTo = "A"),
-            Part(id = "C", name = "Top Cladding Accent", length = 400f, width = 2800f, allowRotation = false),
-            Part(id = "D", name = "Small Border Left", length = 150f, width = 600f, allowRotation = true),
-            Part(id = "E", name = "Small Border Right", length = 150f, width = 600f, allowRotation = true)
+            Part(id = "A", name = "پنل دیواری چپ", length = 1200f, width = 1400f, allowRotation = false),
+            Part(id = "B", name = "پنل دیواری راست بوک‌مچ", length = 1200f, width = 1400f, allowRotation = false, matchAdjacentTo = "A"),
+            Part(id = "C", name = "باند تزیینی بالای دیوار", length = 400f, width = 2800f, allowRotation = false),
+            Part(id = "D", name = "نوار حاشیه چپ کوچک", length = 150f, width = 600f, allowRotation = true),
+            Part(id = "E", name = "نوار حاشیه راست کوچک", length = 150f, width = 600f, allowRotation = true)
         )
         triggerOptimization()
     }

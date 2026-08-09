@@ -478,12 +478,16 @@ object StoneCutSolver {
         val instructions = mutableListOf<StepInstruction>()
         var step = 1
 
+        val containerLabel = containerId
+            .replace("Slab", "اسلب")
+            .replace("Scrap", "ضایعات")
+
         // 1. Trim margins
         if (trimMargin > 0f) {
             instructions.add(
                 StepInstruction(
                     stepNo = step++,
-                    description = "[$containerId] Trim $trimMargin mm from all 4 perimeter edges of the slab to remove raw/rough border stone."
+                    description = "[$containerLabel] هرس کردن حاشیه: برش $trimMargin میلی‌متر از هر ۴ لبه بیرونی اسلب برای جدا کردن بخش‌های ناهموار لبه سنگ."
                 )
             )
         }
@@ -498,7 +502,7 @@ object StoneCutSolver {
             instructions.add(
                 StepInstruction(
                     stepNo = step++,
-                    description = "[$containerId] Make primary longitudinal cut at Y = ${shelfEndY + diskThickness / 2f} mm to separate Shelf #$shelfNo (height: $maxHeight mm)."
+                    description = "[$containerLabel] ایجاد برش طولی اصلی در Y = ${shelfEndY + diskThickness / 2f} میلی‌متر برای جدا کردن ردیف #$shelfNo (ارتفاع ردیف: $maxHeight میلی‌متر)."
                 )
             )
 
@@ -508,16 +512,16 @@ object StoneCutSolver {
                 val isLast = i == sortedParts.size - 1
 
                 val desc = StringBuilder()
-                desc.append("[$containerId] Slice Shelf #$shelfNo transversely at X = ${part.x + part.width + diskThickness / 2f} mm ")
-                desc.append("to isolate Part ${part.part.id} (${part.part.name}, size: ${part.part.width.toInt()}x${part.part.length.toInt()} mm).")
+                desc.append("[$containerLabel] برش عرضی ردیف #$shelfNo در X = ${part.x + part.width + diskThickness / 2f} میلی‌متر ")
+                desc.append("برای جدا کردن قطعه ${part.part.id} (${part.part.name}، ابعاد: ${part.part.width.toInt()} × ${part.part.length.toInt()} میلی‌متر).")
                 
                 if (part.isRotated) {
-                    desc.append(" (Part is rotated 90° to minimize scrap).")
+                    desc.append(" (قطعه جهت کاهش ضایعات ۹۰ درجه چرخانده شده است).")
                 }
 
                 // Mention vein matching chain details
                 if (part.part.matchAdjacentTo.isNotEmpty()) {
-                    desc.append(" *Vein Match alert: Placed immediately adjacent to Part ${part.part.matchAdjacentTo} to maintain continuous vein alignment.*")
+                    desc.append(" *هشدار تطابق رگه: این قطعه بلافاصله در کنار قطعه ${part.part.matchAdjacentTo} چیده شده است تا هماهنگی رگه‌های طبیعی سنگ حفظ شود.*")
                 }
 
                 instructions.add(

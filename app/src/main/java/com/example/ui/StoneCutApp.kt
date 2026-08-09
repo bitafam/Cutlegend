@@ -41,7 +41,7 @@ import kotlin.math.sin
 @Composable
 fun StoneCutApp(viewModel: StoneCutViewModel) {
     var selectedTab by remember { mutableStateOf(0) }
-    val tabs = listOf("Settings & Inventory", "Parts & Veins", "Optimized Layout Map")
+    val tabs = listOf("تنظیمات و انبار", "قطعات و رگه‌ها", "نقشه چیدمان بهینه")
 
     val standardSlab by viewModel.standardSlab.collectAsState()
     val scrapInventory by viewModel.scrapInventory.collectAsState()
@@ -95,8 +95,8 @@ fun StoneCutApp(viewModel: StoneCutViewModel) {
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "ENGINE v4.2 // READY",
-                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold),
+                                text = "موتور بهینه‌ساز v4.2 // آماده به کار",
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, letterSpacing = 0.5.sp, fontWeight = FontWeight.Bold),
                                 color = MaterialTheme.colorScheme.primary
                             )
                         }
@@ -115,7 +115,7 @@ fun StoneCutApp(viewModel: StoneCutViewModel) {
                             contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                             modifier = Modifier.height(32.dp)
                         ) {
-                            Text("L-Kitchen", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Text("دمو کابینت L", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
                         Button(
                             onClick = { viewModel.loadWallCladdingTemplate() },
@@ -128,7 +128,7 @@ fun StoneCutApp(viewModel: StoneCutViewModel) {
                             contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                             modifier = Modifier.height(32.dp)
                         ) {
-                            Text("Cladding", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Text("دمو دیوارپوش", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -157,9 +157,9 @@ fun StoneCutApp(viewModel: StoneCutViewModel) {
                             else -> "📐"
                         }
                         val shortLabel = when (index) {
-                            0 -> "STOCK"
-                            1 -> "PROJECT"
-                            else -> "NESTING"
+                            0 -> "انبار"
+                            1 -> "پروژه"
+                            else -> "چیدمان"
                         }
                         
                         Column(
@@ -260,8 +260,8 @@ fun SummaryQuickBanner(result: OptimizationResult?) {
         ) {
             Column {
                 Text(
-                    text = "YIELD EFFICIENCY",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp),
+                    text = "بازدهی چیدمان",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                 )
                 Spacer(modifier = Modifier.height(2.dp))
@@ -290,8 +290,8 @@ fun SummaryQuickBanner(result: OptimizationResult?) {
             
             Column {
                 Text(
-                    text = "SLABS USED",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp),
+                    text = "اسلب مصرفی",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                 )
                 Spacer(modifier = Modifier.height(2.dp))
@@ -310,8 +310,8 @@ fun SummaryQuickBanner(result: OptimizationResult?) {
             
             Column {
                 Text(
-                    text = "SCRAP REUSED",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp),
+                    text = "ضایعات مصرفی",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                 )
                 Spacer(modifier = Modifier.height(2.dp))
@@ -361,7 +361,7 @@ fun InventorySettingsTab(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Standard Slab Dimensions",
+                        text = "ابعاد اسلب استاندارد",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -376,7 +376,7 @@ fun InventorySettingsTab(
                                     viewModel.updateStandardSlab(l, editSlabW.toFloatOrNull() ?: 1800f, editSlabT.toFloatOrNull() ?: 20f)
                                 }
                             },
-                            label = { Text("Length L (mm)") },
+                            label = { Text("طول اسلب L (میلی‌متر)") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.weight(1f).testTag("slab_length_input")
                         )
@@ -388,7 +388,7 @@ fun InventorySettingsTab(
                                     viewModel.updateStandardSlab(editSlabL.toFloatOrNull() ?: 3000f, w, editSlabT.toFloatOrNull() ?: 20f)
                                 }
                             },
-                            label = { Text("Width W (mm)") },
+                            label = { Text("عرض اسلب W (میلی‌متر)") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.weight(1f).testTag("slab_width_input")
                         )
@@ -402,7 +402,7 @@ fun InventorySettingsTab(
                                 viewModel.updateStandardSlab(editSlabL.toFloatOrNull() ?: 3000f, editSlabW.toFloatOrNull() ?: 1800f, t)
                             }
                         },
-                        label = { Text("Thickness T (mm)") },
+                        label = { Text("ضخامت اسلب T (میلی‌متر)") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -418,7 +418,7 @@ fun InventorySettingsTab(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Machine & Saw Settings",
+                        text = "تنظیمات دستگاه برش و اره",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -433,7 +433,7 @@ fun InventorySettingsTab(
                                     viewModel.updateMachineParameters(k, trimMargin)
                                 }
                             },
-                            label = { Text("Blade Kerf (mm)") },
+                            label = { Text("ضخامت تیغه / کرف (میلی‌متر)") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             modifier = Modifier.weight(1f).testTag("blade_kerf_input")
                         )
@@ -445,7 +445,7 @@ fun InventorySettingsTab(
                                     viewModel.updateMachineParameters(diskThickness, t)
                                 }
                             },
-                            label = { Text("Trim Margin (mm)") },
+                            label = { Text("حاشیه دور سنگ / هرس (میلی‌متر)") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             modifier = Modifier.weight(1f).testTag("trim_margin_input")
                         )
@@ -467,13 +467,14 @@ fun InventorySettingsTab(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Scrap Inventory / Offcuts",
+                            text = "انبار ضایعات و تکه سنگ‌های باقیمانده",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Use Scrap", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text("استفاده از ضایعات", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.width(4.dp))
                             Checkbox(
                                 checked = useScrap,
                                 onCheckedChange = { viewModel.setUseScrap(it) },
@@ -484,13 +485,13 @@ fun InventorySettingsTab(
 
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Prioritize using these pieces before cutting new slabs.",
+                        text = "پیش از برش اسلب‌های جدید، استفاده از این قطعات باقیمانده کارگاه را در اولویت قرار دهید تا دورریز سنگ حداقل شود.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))
-                    Divider()
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                     Spacer(modifier = Modifier.height(12.dp))
 
                     // Add scrap form
@@ -501,14 +502,14 @@ fun InventorySettingsTab(
                         OutlinedTextField(
                             value = newScrapL,
                             onValueChange = { newScrapL = it },
-                            label = { Text("L (mm)") },
+                            label = { Text("طول L (میلی‌متر)") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.weight(1f)
                         )
                         OutlinedTextField(
                             value = newScrapW,
                             onValueChange = { newScrapW = it },
-                            label = { Text("W (mm)") },
+                            label = { Text("عرض W (میلی‌متر)") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.weight(1f)
                         )
@@ -527,7 +528,7 @@ fun InventorySettingsTab(
                             ),
                             modifier = Modifier.testTag("add_scrap_button")
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = "Add Scrap")
+                            Icon(Icons.Default.Add, contentDescription = "افزودن ضایعات")
                         }
                     }
 
@@ -540,7 +541,7 @@ fun InventorySettingsTab(
                                 .padding(vertical = 24.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("No scrap pieces registered", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                            Text("هیچ قطعه ضایعاتی ثبت نشده است", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                         }
                     } else {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -565,7 +566,7 @@ fun InventorySettingsTab(
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text(
-                                            text = "Scrap #${scrap.id}: ${scrap.length.toInt()} x ${scrap.width.toInt()} mm",
+                                            text = "ضایعات #${scrap.id}: ${scrap.length.toInt()} × ${scrap.width.toInt()} میلی‌متر",
                                             fontWeight = if (scrap.isEnabled) FontWeight.SemiBold else FontWeight.Normal,
                                             color = if (scrap.isEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                                         )
@@ -576,7 +577,7 @@ fun InventorySettingsTab(
                                     ) {
                                         Icon(
                                             Icons.Default.Delete,
-                                            contentDescription = "Delete",
+                                            contentDescription = "حذف",
                                             tint = MaterialTheme.colorScheme.error,
                                             modifier = Modifier.size(18.dp)
                                         )
@@ -617,7 +618,7 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Add Piece to Cut",
+                        text = "افزودن قطعه برای برش",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -627,7 +628,7 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
                     OutlinedTextField(
                         value = name,
                         onValueChange = { name = it },
-                        label = { Text("Piece Name / Location") },
+                        label = { Text("نام یا محل استفاده قطعه") },
                         modifier = Modifier.fillMaxWidth().testTag("part_name_input")
                     )
 
@@ -637,14 +638,14 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
                         OutlinedTextField(
                             value = lStr,
                             onValueChange = { lStr = it },
-                            label = { Text("Length W (Y, mm)") },
+                            label = { Text("طول قطعه (Y، میلی‌متر)") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.weight(1f).testTag("part_length_input")
                         )
                         OutlinedTextField(
                             value = wStr,
                             onValueChange = { wStr = it },
-                            label = { Text("Width L (X, mm)") },
+                            label = { Text("عرض قطعه (X، میلی‌متر)") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.weight(1f).testTag("part_width_input")
                         )
@@ -663,7 +664,7 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
                                 onCheckedChange = { allowRotation = it },
                                 modifier = Modifier.testTag("part_allow_rotation_checkbox")
                             )
-                            Text("Allow 90° Rotation", fontSize = 14.sp)
+                            Text("اجازه چرخش ۹۰ درجه", fontSize = 14.sp)
                         }
 
                         // Match Adjacent dropdown
@@ -672,15 +673,15 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
                                 onClick = { expandedDropdown = true },
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer)
                             ) {
-                                Text(if (matchAdjacentTo.isEmpty()) "Vein Connection" else "Match Adjacent to: $matchAdjacentTo")
-                                Icon(Icons.Default.ArrowDropDown, contentDescription = "Veins")
+                                Text(if (matchAdjacentTo.isEmpty()) "اتصال رگه سنگ" else "انطباق رگه با: $matchAdjacentTo")
+                                Icon(Icons.Default.ArrowDropDown, contentDescription = "رگه‌ها")
                             }
                             DropdownMenu(
                                 expanded = expandedDropdown,
                                 onDismissRequest = { expandedDropdown = false }
                             ) {
                                 DropdownMenuItem(
-                                    text = { Text("No Vein Continuity (Independent)") },
+                                    text = { Text("بدون پیوستگی رگه (مستقل)") },
                                     onClick = {
                                         matchAdjacentTo = ""
                                         expandedDropdown = false
@@ -688,7 +689,7 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
                                 )
                                 parts.forEach { p ->
                                     DropdownMenuItem(
-                                        text = { Text("Continuous with Part ${p.id} (${p.name})") },
+                                        text = { Text("پیوستگی رگه با قطعه ${p.id} (${p.name})") },
                                         onClick = {
                                             matchAdjacentTo = p.id
                                             expandedDropdown = false
@@ -716,9 +717,9 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
                         },
                         modifier = Modifier.fillMaxWidth().testTag("add_part_submit_button")
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = "Add")
+                        Icon(Icons.Default.Add, contentDescription = "افزودن")
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Add to Cutting List")
+                        Text("افزودن به لیست برش")
                     }
                 }
             }
@@ -732,12 +733,12 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Required Cuts List",
+                    text = "لیست قطعات مورد نیاز",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "${parts.size} items",
+                    text = "${parts.size} مورد",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -752,7 +753,7 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
                         .padding(vertical = 48.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("No parts added yet. Click a demo template above to populate!", textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("هنوز قطعه‌ای برای برش ثبت نشده است.\nبرای شروع روی دموهای بالا کلیک کنید تا لیست پر شود!", textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         } else {
@@ -799,7 +800,7 @@ fun PartRowItem(part: Part, onDelete: () -> Unit) {
                 Column {
                     Text(text = part.name, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                     Text(
-                        text = "${part.width.toInt()} x ${part.length.toInt()} mm (Area: ${(part.width * part.length / 1000000).format(2)} m²)",
+                        text = "${part.width.toInt()} × ${part.length.toInt()} میلی‌متر (مساحت: ${(part.width * part.length / 1000000).format(2)} مترمربع)",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -812,13 +813,13 @@ fun PartRowItem(part: Part, onDelete: () -> Unit) {
                         if (part.allowRotation) {
                             SuggestionChip(
                                 onClick = {},
-                                label = { Text("Rotatable", fontSize = 10.sp) },
+                                label = { Text("قابل چرخش", fontSize = 10.sp) },
                                 modifier = Modifier.scale(0.85f)
                             )
                         } else {
                             SuggestionChip(
                                 onClick = {},
-                                label = { Text("Fixed Vein direction", fontSize = 10.sp) },
+                                label = { Text("جهت رگه ثابت", fontSize = 10.sp) },
                                 modifier = Modifier.scale(0.85f),
                                 colors = SuggestionChipDefaults.suggestionChipColors(
                                     containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
@@ -829,12 +830,12 @@ fun PartRowItem(part: Part, onDelete: () -> Unit) {
                         if (part.matchAdjacentTo.isNotEmpty()) {
                             SuggestionChip(
                                 onClick = {},
-                                label = { Text("Vein alignment ➔ Part ${part.matchAdjacentTo}", fontSize = 10.sp) },
+                                label = { Text("اتصال رگه ➔ قطعه ${part.matchAdjacentTo}", fontSize = 10.sp) },
                                 modifier = Modifier.scale(0.85f),
                                 icon = {
                                     Icon(
                                         Icons.Default.Link,
-                                        contentDescription = "Matched",
+                                        contentDescription = "جفت‌شده",
                                         modifier = Modifier.size(12.dp),
                                         tint = MaterialTheme.colorScheme.primary
                                     )
@@ -846,7 +847,7 @@ fun PartRowItem(part: Part, onDelete: () -> Unit) {
             }
 
             IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = "Delete part", tint = MaterialTheme.colorScheme.error)
+                Icon(Icons.Default.Delete, contentDescription = "حذف قطعه", tint = MaterialTheme.colorScheme.error)
             }
         }
     }
@@ -864,7 +865,7 @@ fun VisualMapTab(viewModel: StoneCutViewModel, result: OptimizationResult?, disk
             Column(horizontalAlignment = Alignment.CenterAlignment) {
                 Icon(Icons.Default.Map, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.primary)
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("No layouts generated. Please add parts to cutting list first.", textAlign = TextAlign.Center)
+                Text("نقشه‌ای وجود ندارد. لطفاً ابتدا قطعاتی را به لیست برش اضافه کنید.", textAlign = TextAlign.Center)
             }
         }
         return
@@ -878,13 +879,13 @@ fun VisualMapTab(viewModel: StoneCutViewModel, result: OptimizationResult?, disk
     ) {
         item {
             Text(
-                text = "Interactive Cutting Layout Maps",
+                text = "نقشه‌های تعاملی چیدمان و برش سنگ",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                text = "Each slab is rendered below with its exact parts, cut lines, and grain flow direction.",
+                text = "هر اسلب در زیر با قطعات قرارگرفته، خطوط دقیق برش و جهت رگه‌های طبیعی سنگ ترسیم شده است.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -902,6 +903,10 @@ fun VisualMapTab(viewModel: StoneCutViewModel, result: OptimizationResult?, disk
 fun SlabLayoutCard(layout: SlabLayout, diskThickness: Float, trimMargin: Float) {
     val checkedSteps = remember { mutableStateMapOf<Int, Boolean>() }
 
+    val containerLabel = layout.containerId
+        .replace("Slab", "اسلب")
+        .replace("Scrap", "ضایعات")
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -917,13 +922,13 @@ fun SlabLayoutCard(layout: SlabLayout, diskThickness: Float, trimMargin: Float) 
             ) {
                 Column {
                     Text(
-                        text = layout.containerId,
+                        text = containerLabel,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.ExtraBold
                     )
                     Text(
-                        text = "${layout.originalLength.toInt()} x ${layout.originalWidth.toInt()} mm " +
-                                if (layout.isScrap) "(Reused Scrap Piece)" else "(Standard Slab)",
+                        text = "${layout.originalLength.toInt()} × ${layout.originalWidth.toInt()} میلی‌متر " +
+                                if (layout.isScrap) "(تکه ضایعاتی بازیافتی)" else "(اسلب استاندارد)",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -934,7 +939,7 @@ fun SlabLayoutCard(layout: SlabLayout, diskThickness: Float, trimMargin: Float) 
                         .padding(horizontal = 10.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = String.format("%.1f%% Yield", layout.efficiency),
+                        text = String.format("بازدهی %.1f%%", layout.efficiency),
                         color = MaterialTheme.colorScheme.onPrimary,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
@@ -957,33 +962,33 @@ fun SlabLayoutCard(layout: SlabLayout, diskThickness: Float, trimMargin: Float) 
             Spacer(modifier = Modifier.height(16.dp))
 
             // Statistics expansion
-            Text("Material Statistics", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            Text("آمار مصرف مواد و مصالح", fontWeight = FontWeight.Bold, fontSize = 14.sp)
             Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Parts Area", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("${(layout.placedParts.sumOf { (it.width * it.height).toDouble() } / 1000000.0).format(2)} m²", fontWeight = FontWeight.Bold)
+                    Text("مساحت قطعات مفید", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("${(layout.placedParts.sumOf { (it.width * it.height).toDouble() } / 1000000.0).format(2)} مترمربع", fontWeight = FontWeight.Bold)
                 }
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Kerf Dust Loss", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("${(layout.wasteDiskKerfArea / 1000000.0).format(3)} m²", fontWeight = FontWeight.Bold)
+                    Text("هدررفت پودری تیغه", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("${(layout.wasteDiskKerfArea / 1000000.0).format(3)} مترمربع", fontWeight = FontWeight.Bold)
                 }
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Solid Waste Scrap", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("${(layout.wasteSlabScrapArea / 1000000.0).format(2)} m²", fontWeight = FontWeight.Bold)
+                    Text("ضایعات و دورریز جامد", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("${(layout.wasteSlabScrapArea / 1000000.0).format(2)} مترمربع", fontWeight = FontWeight.Bold)
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            Divider()
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
             Spacer(modifier = Modifier.height(12.dp))
 
             // Operator sequence checkbox checklist
             Text(
-                text = "Saw Operator Cutting Sequence",
+                text = "ترتیب گام‌های برش مخصوص اپراتور دستگاه اره",
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.primary
@@ -1137,13 +1142,13 @@ fun StoneLayoutCanvas(layout: SlabLayout, diskThickness: Float, trimMargin: Floa
 
             drawIntoCanvas { canvas ->
                 canvas.nativeCanvas.drawText(
-                    "Part ${part.part.id}",
+                    "قطعه ${part.part.id}",
                     px + pw / 2f,
                     py + ph / 2f,
                     textPaint
                 )
                 canvas.nativeCanvas.drawText(
-                    "${part.part.width.toInt()}x${part.part.length.toInt()} mm",
+                    "${part.part.width.toInt()} × ${part.part.length.toInt()} میلی‌متر",
                     px + pw / 2f,
                     py + ph / 2f + 11.dp.toPx(),
                     detailsPaint
