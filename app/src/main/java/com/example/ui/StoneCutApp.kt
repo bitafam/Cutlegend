@@ -1371,12 +1371,38 @@ fun SlabLayoutCard(layout: SlabLayout, diskThickness: Float, trimMargin: Float) 
             Spacer(modifier = Modifier.height(12.dp))
 
             // Operator sequence checkbox checklist
-            Text(
-                text = "ترتیب گام‌های برش مخصوص اپراتور دستگاه اره",
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.primary
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "ترتیب گام‌های برش مخصوص اپراتور دستگاه اره",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                val context = LocalContext.current
+                IconButton(
+                    onClick = {
+                        val clipboardManager = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                        val clipData = android.content.ClipData.newPlainText(
+                            "Cutting Instructions",
+                            layout.instructions.joinToString("\n") { "${it.stepNo}. ${it.description}" }
+                        )
+                        clipboardManager.setPrimaryClip(clipData)
+                        android.widget.Toast.makeText(context, "دستورالعمل‌های برش کپی شدند", android.widget.Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = "کپی دستورالعمل‌ها",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
             Spacer(modifier = Modifier.height(8.dp))
 
             layout.instructions.forEach { step ->

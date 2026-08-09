@@ -36,9 +36,12 @@ jobs:
             python3 -c "import base64; data = open('debug.keystore.base64', 'r').read().strip(); decoded = base64.b64decode(''.join(data.split())); open('debug.keystore', 'wb').write(decoded)"
           fi
 
+      - name: Make Gradlew Executable
+        run: chmod +x gradlew
+
       - name: Build Debug APK
         run: |
-          gradle assembleDebug
+          ./gradlew assembleDebug
 
       - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
