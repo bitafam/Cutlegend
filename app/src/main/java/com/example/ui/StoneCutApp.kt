@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.*
 import com.example.ui.theme.*
+import java.text.SimpleDateFormat
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
@@ -50,6 +51,15 @@ fun StoneCutApp(viewModel: StoneCutViewModel) {
     val diskThickness by viewModel.diskThickness.collectAsState()
     val trimMargin by viewModel.trimMargin.collectAsState()
     val result by viewModel.optimizationResult.collectAsState()
+
+    val savedProjects by viewModel.savedProjects.collectAsState()
+    val currentProjectId by viewModel.currentProjectId.collectAsState()
+    val currentProjectName by viewModel.currentProjectName.collectAsState()
+
+    var showProjectsDialog by remember { mutableStateOf(false) }
+    var showSaveDialog by remember { mutableStateOf(false) }
+    var showSaveAsDialog by remember { mutableStateOf(false) }
+    var projectNameInput by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
@@ -208,6 +218,145 @@ fun StoneCutApp(viewModel: StoneCutViewModel) {
             // Summary stats banner
             SummaryQuickBanner(result = result)
 
+            // Active Project Info & Toolbar Row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Left side: Active Project name
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(
+                        Icons.Default.Done,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = currentProjectName?.let { "پروژه فعال: $it" } ?: "پروژه جدید (ذخیره نشده)",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1
+                    )
+                }
+
+                // Right side: Project Actions (Projects, Save, Export PDF)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Projects Manager Button
+                    FilledTonalButton(
+                        onClick = { showProjectsDialog = true },
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                        modifier = Modifier.height(32.dp)
+                    ) {
+                        Icon(Icons.Default.List, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("پروژه‌ها", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    // Save Button
+                    if (currentProjectId != null) {
+                        Button(
+                            onClick = { viewModel.saveProject(currentProjectName ?: "") },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                            modifier = Modifier.height(32.dp)
+                        ) {
+                            Icon(Icons.Default.Done, contentDescription = null, modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("ذخیره سریع", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    } else {
+                        Button(
+                            onClick = {
+                                projectNameInput = ""
+                                showSaveDialog = true
+                            },
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                            modifier = Modifier.height(32.dp)
+                        ) {
+                            Icon(Icons.Default.Done, contentDescription = null, modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("ذخیره", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    // PDF Button
+                    var pdfLoading by remember { mutableStateOf(false) }
+                    val context = LocalContext.current
+                    Button(
+                        onClick = {
+                            pdfLoading = true
+                            viewModel.generatePdfReport(
+                                context = context,
+                                onComplete = { file ->
+                                    pdfLoading = false
+                                    try {
+                                        val authority = "${context.packageName}.fileprovider"
+                                        val uri = androidx.core.content.FileProvider.getUriForFile(context, authority, file)
+                                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                                            setDataAndType(uri, "application/pdf")
+                                            flags = android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+                                        }
+                                        context.startActivity(android.content.Intent.createChooser(intent, "مشاهده گزارش PDF"))
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                        try {
+                                            val authority = "${context.packageName}.fileprovider"
+                                            val uri = androidx.core.content.FileProvider.getUriForFile(context, authority, file)
+                                            val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                                type = "application/pdf"
+                                                putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                                                flags = android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                            }
+                                            context.startActivity(android.content.Intent.createChooser(shareIntent, "اشتراک‌گذاری گزارش PDF"))
+                                        } catch (ex: Exception) {
+                                            ex.printStackTrace()
+                                            android.widget.Toast.makeText(context, "خطا در ساخت گزارش", android.widget.Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                },
+                                onError = { ex ->
+                                    pdfLoading = false
+                                    android.widget.Toast.makeText(context, "خطا: ${ex.message}", android.widget.Toast.LENGTH_LONG).show()
+                                }
+                            )
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.tertiary,
+                            contentColor = MaterialTheme.colorScheme.onTertiary
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                        modifier = Modifier.height(32.dp),
+                        enabled = !pdfLoading
+                    ) {
+                        if (pdfLoading) {
+                            CircularProgressIndicator(modifier = Modifier.size(12.dp), color = MaterialTheme.colorScheme.onTertiary, strokeWidth = 1.5.dp)
+                        } else {
+                            Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(14.dp))
+                        }
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("خروجی PDF", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -236,6 +385,241 @@ fun StoneCutApp(viewModel: StoneCutViewModel) {
                 }
             }
         }
+    }
+
+    if (showProjectsDialog) {
+        AlertDialog(
+            onDismissRequest = { showProjectsDialog = false },
+            title = {
+                Text(
+                    text = "مدیریت پروژه‌های ذخیره شده",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Right
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 400.dp)
+                ) {
+                    // New project action button
+                    Button(
+                        onClick = {
+                            viewModel.resetToNewProject()
+                            showProjectsDialog = false
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("ایجاد پروژه جدید (خالی)", fontWeight = FontWeight.Bold)
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    Text(
+                        text = "لیست پروژه‌ها (${savedProjects.size} مورد):",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Right
+                    )
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    if (savedProjects.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("هنوز پروژه‌ای ذخیره نشده است.", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(savedProjects) { project ->
+                                val date = SimpleDateFormat("yyyy/MM/dd HH:mm", java.util.Locale.US).format(java.util.Date(project.timestamp))
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            viewModel.loadProject(project)
+                                            showProjectsDialog = false
+                                        },
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (currentProjectId == project.id) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                    ),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(12.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        IconButton(
+                                            onClick = { viewModel.deleteProject(project) }
+                                        ) {
+                                            Icon(Icons.Default.Delete, contentDescription = "حذف پروژه", tint = MaterialTheme.colorScheme.error)
+                                        }
+                                        
+                                        Column(
+                                            modifier = Modifier.weight(1f),
+                                            horizontalAlignment = Alignment.End
+                                        ) {
+                                            Text(
+                                                text = project.name,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 14.sp,
+                                                textAlign = TextAlign.Right
+                                            )
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(
+                                                text = "$date // ابعاد اسلب: ${project.slabLength.toInt()}x${project.slabWidth.toInt()} میلی‌متر",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                fontSize = 10.sp,
+                                                textAlign = TextAlign.Right
+                                            )
+                                            Text(
+                                                text = "تعداد قطعات: ${project.parts.size} عدد",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                textAlign = TextAlign.Right
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showProjectsDialog = false }) {
+                    Text("بستن")
+                }
+            }
+        )
+    }
+
+    if (showSaveDialog) {
+        AlertDialog(
+            onDismissRequest = { showSaveDialog = false },
+            title = {
+                Text(
+                    text = "ذخیره پروژه جدید",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Right
+                )
+            },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "لطفاً نامی برای پروژه انتخاب کنید:",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Right
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = projectNameInput,
+                        onValueChange = { projectNameInput = it },
+                        label = { Text("نام پروژه") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (projectNameInput.isNotEmpty()) {
+                            viewModel.saveProject(projectNameInput)
+                            showSaveDialog = false
+                        }
+                    }
+                ) {
+                    Text("ذخیره")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSaveDialog = false }) {
+                    Text("انصراف")
+                }
+            }
+        )
+    }
+
+    if (showSaveAsDialog) {
+        AlertDialog(
+            onDismissRequest = { showSaveAsDialog = false },
+            title = {
+                Text(
+                    text = "ذخیره به عنوان پروژه جدید",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Right
+                )
+            },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "لطفاً نام جدیدی برای این پروژه وارد کنید:",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Right
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = projectNameInput,
+                        onValueChange = { projectNameInput = it },
+                        label = { Text("نام پروژه جدید") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (projectNameInput.isNotEmpty()) {
+                            viewModel.saveAsNewProject(projectNameInput)
+                            showSaveAsDialog = false
+                        }
+                    }
+                ) {
+                    Text("ذخیره")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSaveAsDialog = false }) {
+                    Text("انصراف")
+                }
+            }
+        )
     }
 }
 

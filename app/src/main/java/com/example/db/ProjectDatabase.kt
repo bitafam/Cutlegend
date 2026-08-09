@@ -18,8 +18,8 @@ data class ProjectEntity(
     val diskThickness: Float = 3.5f,
     val trimMargin: Float = 10f,
     val useScrap: Boolean = true,
-    val partsJson: String,
-    val scrapJson: String
+    val parts: List<Part>,
+    val scrap: List<ScrapPiece>
 )
 
 class RoomConverters {
