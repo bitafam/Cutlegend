@@ -38,7 +38,7 @@ android {
         val base64File = file("${rootDir}/debug.keystore.base64")
         if (base64File.exists()) {
           try {
-            val bytes = Base64.getDecoder().decode(base64File.readText().trim())
+            val bytes = Base64.getMimeDecoder().decode(base64File.readText().trim())
             keystore.writeBytes(bytes)
           } catch (e: Exception) {
             e.printStackTrace()
