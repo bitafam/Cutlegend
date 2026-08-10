@@ -34,7 +34,7 @@ class StoneCutViewModel(application: Application) : AndroidViewModel(application
     private val db = Room.databaseBuilder(
         application,
         AppDatabase::class.java, "stone_cut_database"
-    ).fallbackToDestructiveMigration().build()
+    ).fallbackToDestructiveMigration(true).build()
     
     private val projectDao = db.projectDao()
 
