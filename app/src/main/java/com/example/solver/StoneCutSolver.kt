@@ -28,21 +28,19 @@ object StoneCutSolver {
         // 1. Graph Construction: Group parts into chains and independent parts
         val chains = buildChains(parts)
         val independentParts = parts.filter { part ->
-            // Independent if not in any multi-part chain
             val chain = chains.find { it.contains(part) }
             chain == null || chain.size == 1
         }
         val multiPartChains = chains.filter { it.size > 1 }
 
         val usedScraps = mutableListOf<ScrapPiece>()
-        val slabLayouts = mutableListOf<SlabLayout>()
+        val scrapLayouts = mutableListOf<SlabLayout>()
 
         // 2. Scrap First Evaluation (for independent parts)
         val remainingIndependent = independentParts.toMutableList()
         if (useScrap) {
             val enabledScraps = scrapInventory.filter { it.isEnabled }.sortedBy { it.length * it.width }
             for (scrap in enabledScraps) {
-                // Try to pack as many independent parts as possible into this scrap piece
                 val usableL = max(0f, scrap.length - 2 * trimMargin)
                 val usableW = max(0f, scrap.width - 2 * trimMargin)
 
@@ -51,7 +49,6 @@ object StoneCutSolver {
                 val packedInThisScrap = mutableListOf<PlacedPart>()
                 val remainingTemp = mutableListOf<Part>()
 
-                // Simple shelf packing on this scrap piece
                 var currentX = 0f
                 var currentY = 0f
                 var currentShelfHeight = 0f
@@ -65,7 +62,6 @@ object StoneCutSolver {
                         val pw = dim.first
                         val ph = dim.second
 
-                        // Check if fits on current shelf
                         if (currentX + pw <= usableL && currentY + ph <= usableW) {
                             packedInThisScrap.add(
                                 PlacedPart(
@@ -88,7 +84,6 @@ object StoneCutSolver {
                     }
 
                     if (!placed) {
-                        // Try new shelf
                         val nextY = currentY + currentShelfHeight + diskThickness
                         for (dim in dimensions) {
                             val pw = dim.first
@@ -128,12 +123,8 @@ object StoneCutSolver {
                     remainingIndependent.clear()
                     remainingIndependent.addAll(remainingTemp)
 
-                    // Compute Scrap layout statistics
                     val scrapArea = scrap.length * scrap.width
                     val partArea = packedInThisScrap.sumOf { (it.width * it.height).toDouble() }.toFloat()
-                    
-                    // Kerf area inside scrap: each part after the first on shelf adds a kerf cut, plus shelf splits
-                    // Let's compute actual kerf used
                     val kerfArea = computeKerfArea(packedInThisScrap, diskThickness)
                     val wasteSlabScrap = max(0f, scrapArea - partArea - kerfArea)
                     val efficiency = (partArea / scrapArea) * 100f
@@ -141,7 +132,7 @@ object StoneCutSolver {
                     val cutLines = generateCutLines(packedInThisScrap, scrap.length, scrap.width, trimMargin, diskThickness)
                     val instructions = generateInstructions(packedInThisScrap, scrap.length, scrap.width, trimMargin, diskThickness, "Scrap #${scrap.id}")
 
-                    slabLayouts.add(
+                    scrapLayouts.add(
                         SlabLayout(
                             containerId = "Scrap #${scrap.id}",
                             isScrap = true,
@@ -160,28 +151,118 @@ object StoneCutSolver {
             }
         }
 
-        // 3. Chain & Remaining Independent Nesting on Standard Slabs
-        // Prepare packing items. Each item is either a compound chain or a single part.
+        // Convert standard slab dimensions minus trim margin for chain fitting checks
+        val usableL = max(0f, standardSlab.length - 2 * trimMargin)
+        val usableW = max(0f, standardSlab.width - 2 * trimMargin)
+
+        // Convert remaining independent parts and chains to PackableItems
         val packItems = mutableListOf<PackableItem>()
-
-        // Convert multi-part chains to PackableItems
         for (chain in multiPartChains) {
-            packItems.add(PackableItem.fromChain(chain, diskThickness))
+            packItems.add(PackableItem.fromChain(chain, diskThickness, usableL, usableW))
         }
-
-        // Convert remaining independent parts to PackableItems
         for (part in remainingIndependent) {
             packItems.add(PackableItem.fromPart(part))
         }
 
-        // Sort items by height descending to optimize shelf packing
-        packItems.sortByDescending { it.height }
+        // Run multi-heuristic evaluations to minimize standard slab usage and maximize efficiency
+        val sortMethods = listOf("height", "width", "area", "short_side", "long_side")
+        val transposeOptions = listOf(false, true)
 
-        val usableL = max(0f, standardSlab.length - 2 * trimMargin)
-        val usableW = max(0f, standardSlab.width - 2 * trimMargin)
+        var bestLayouts = emptyList<SlabLayout>()
+        var bestSlabsCount = Int.MAX_VALUE
+        var bestEfficiency = -1f
+        var bestPartsPlacedCount = -1
 
+        for (sortBy in sortMethods) {
+            for (transpose in transposeOptions) {
+                val layouts = packSlabs(
+                    items = packItems,
+                    slabLength = standardSlab.length,
+                    slabWidth = standardSlab.width,
+                    trimMargin = trimMargin,
+                    diskThickness = diskThickness,
+                    transposeSlab = transpose,
+                    sortBy = sortBy
+                )
+
+                val totalPartsPlaced = layouts.sumOf { it.placedParts.size }
+                val standardSlabsUsed = layouts.count { !it.isScrap }
+
+                val isBetter = when {
+                    totalPartsPlaced > bestPartsPlacedCount -> true
+                    totalPartsPlaced < bestPartsPlacedCount -> false
+                    standardSlabsUsed < bestSlabsCount -> true
+                    standardSlabsUsed > bestSlabsCount -> false
+                    else -> {
+                        val avgEfficiency = if (layouts.isNotEmpty()) layouts.map { it.efficiency }.average().toFloat() else 0f
+                        avgEfficiency > bestEfficiency
+                    }
+                }
+
+                if (isBetter) {
+                    bestLayouts = layouts
+                    bestSlabsCount = standardSlabsUsed
+                    bestPartsPlacedCount = totalPartsPlaced
+                    val avgEff = if (layouts.isNotEmpty()) layouts.map { it.efficiency }.average().toFloat() else 0f
+                    bestEfficiency = avgEff
+                }
+            }
+        }
+
+        val finalSlabLayouts = mutableListOf<SlabLayout>()
+        finalSlabLayouts.addAll(scrapLayouts)
+        finalSlabLayouts.addAll(bestLayouts)
+
+        // Compute overall statistics
+        val totalPartArea = parts.sumOf { (it.length * it.width).toDouble() }.toFloat()
+        val standardSlabsUsed = finalSlabLayouts.count { !it.isScrap }
+        val scrapsUsedCount = usedScraps.size
+
+        val totalContainerArea = (standardSlabsUsed * standardSlab.length * standardSlab.width) +
+                finalSlabLayouts.filter { it.isScrap }.sumOf { (it.originalLength * it.originalWidth).toDouble() }.toFloat()
+
+        val totalYield = if (totalContainerArea > 0) (totalPartArea / totalContainerArea) * 100f else 0f
+        val totalKerf = finalSlabLayouts.sumOf { it.wasteDiskKerfArea.toDouble() }.toFloat()
+        val totalScrapArea = finalSlabLayouts.sumOf { it.wasteSlabScrapArea.toDouble() }.toFloat()
+
+        return OptimizationResult(
+            standardSlabsUsedCount = standardSlabsUsed,
+            scrapPiecesUsedCount = scrapsUsedCount,
+            totalYieldPercentage = totalYield,
+            totalSlabScrapArea = totalScrapArea,
+            totalDiskKerfArea = totalKerf,
+            totalPartArea = totalPartArea,
+            slabLayouts = finalSlabLayouts
+        )
+    }
+
+    private fun packSlabs(
+        items: List<PackableItem>,
+        slabLength: Float,
+        slabWidth: Float,
+        trimMargin: Float,
+        diskThickness: Float,
+        transposeSlab: Boolean,
+        sortBy: String
+    ): List<SlabLayout> {
+        val actualL = if (transposeSlab) slabWidth else slabLength
+        val actualW = if (transposeSlab) slabLength else slabWidth
+
+        val usableL = max(0f, actualL - 2 * trimMargin)
+        val usableW = max(0f, actualW - 2 * trimMargin)
+
+        val sortedItems = when (sortBy) {
+            "height" -> items.sortedByDescending { it.height }
+            "width" -> items.sortedByDescending { it.width }
+            "area" -> items.sortedByDescending { it.width * it.height }
+            "short_side" -> items.sortedByDescending { minOf(it.width, it.height) }
+            "long_side" -> items.sortedByDescending { maxOf(it.width, it.height) }
+            else -> items
+        }
+
+        val slabLayouts = mutableListOf<SlabLayout>()
+        val itemsToPack = sortedItems.toMutableList()
         var slabIndex = 1
-        val itemsToPack = packItems.toMutableList()
 
         while (itemsToPack.isNotEmpty()) {
             val containerId = "Slab $slabIndex"
@@ -239,21 +320,21 @@ object StoneCutSolver {
             }
 
             if (packedInSlab.isNotEmpty()) {
-                val slabArea = standardSlab.length * standardSlab.width
+                val slabArea = actualL * actualW
                 val partArea = packedInSlab.sumOf { (it.width * it.height).toDouble() }.toFloat()
                 val kerfArea = computeKerfArea(packedInSlab, diskThickness)
                 val wasteSlabScrap = max(0f, slabArea - partArea - kerfArea)
                 val efficiency = (partArea / slabArea) * 100f
 
-                val cutLines = generateCutLines(packedInSlab, standardSlab.length, standardSlab.width, trimMargin, diskThickness)
-                val instructions = generateInstructions(packedInSlab, standardSlab.length, standardSlab.width, trimMargin, diskThickness, containerId)
+                val cutLines = generateCutLines(packedInSlab, actualL, actualW, trimMargin, diskThickness)
+                val instructions = generateInstructions(packedInSlab, actualL, actualW, trimMargin, diskThickness, containerId)
 
                 slabLayouts.add(
                     SlabLayout(
                         containerId = containerId,
                         isScrap = false,
-                        originalLength = standardSlab.length,
-                        originalWidth = standardSlab.width,
+                        originalLength = actualL,
+                        originalWidth = actualW,
                         trimMargin = trimMargin,
                         placedParts = packedInSlab,
                         efficiency = efficiency,
@@ -265,10 +346,7 @@ object StoneCutSolver {
                 )
                 slabIndex++
             } else {
-                // Critical: Item is too large to fit even a single empty slab.
-                // We force-place or skip to prevent infinite loop.
                 if (itemsToPack.size == unplacedForNextSlab.size) {
-                    // All remaining items are too big, we skip them to avoid freeze
                     break
                 }
             }
@@ -277,27 +355,7 @@ object StoneCutSolver {
             itemsToPack.addAll(unplacedForNextSlab)
         }
 
-        // Compute overall statistics
-        val totalPartArea = parts.sumOf { (it.length * it.width).toDouble() }.toFloat()
-        val standardSlabsUsed = slabLayouts.count { !it.isScrap }
-        val scrapsUsedCount = usedScraps.size
-
-        val totalContainerArea = (standardSlabsUsed * standardSlab.length * standardSlab.width) +
-                slabLayouts.filter { it.isScrap }.sumOf { (it.originalLength * it.originalWidth).toDouble() }.toFloat()
-
-        val totalYield = if (totalContainerArea > 0) (totalPartArea / totalContainerArea) * 100f else 0f
-        val totalKerf = slabLayouts.sumOf { it.wasteDiskKerfArea.toDouble() }.toFloat()
-        val totalScrapArea = slabLayouts.sumOf { it.wasteSlabScrapArea.toDouble() }.toFloat()
-
-        return OptimizationResult(
-            standardSlabsUsedCount = standardSlabsUsed,
-            scrapPiecesUsedCount = scrapsUsedCount,
-            totalYieldPercentage = totalYield,
-            totalSlabScrapArea = totalScrapArea,
-            totalDiskKerfArea = totalKerf,
-            totalPartArea = totalPartArea,
-            slabLayouts = slabLayouts
-        )
+        return slabLayouts
     }
 
     private fun buildChains(parts: List<Part>): List<List<Part>> {
@@ -321,8 +379,6 @@ object StoneCutSolver {
             while (current != null && !visited.contains(current.id)) {
                 visited.add(current.id)
                 currentChain.add(current)
-                // Next item in chain is the child that matches this current item
-                // If there are multiple, trace the first one
                 val children = childrenMap[current.id] ?: emptyList()
                 current = children.firstOrNull()
             }
@@ -360,23 +416,12 @@ object StoneCutSolver {
     }
 
     private fun computeKerfArea(placedParts: List<PlacedPart>, diskThickness: Float): Float {
-        // Kerf loss area estimation.
-        // For N parts, there are cutting operations. Let's approximate kerf loss.
         var kerfArea = 0f
-        // Trim cut area
         if (placedParts.isNotEmpty()) {
             val first = placedParts.first()
-            val isScrap = first.isScrapPiece
-            // We assume a trim around 4 edges of the slab
-            // Wait, we only add kerf area for cuts made
-            // Inside the layout, each placed part is separated by a kerf cut.
-            // Let's estimate kerf loss area as the perimeter of the cut lines * diskThickness
-            val containerId = first.containerId
-            // Let's find unique X boundaries and Y boundaries of placed parts to compute cuts
             val xCuts = placedParts.map { it.x + it.width }.filter { it > 0f }.distinct()
             val yCuts = placedParts.map { it.y + it.height }.filter { it > 0f }.distinct()
             
-            // Sum of kerf area: X cuts and Y cuts inside the container
             for (x in xCuts) {
                 kerfArea += diskThickness * placedParts.filter { it.x + it.width == x }.sumOf { it.height.toDouble() }.toFloat()
             }
@@ -407,15 +452,12 @@ object StoneCutSolver {
         }
 
         // 2. Shelf / Longitudinal cuts (Primary)
-        // Group parts by their top Y coordinate to identify shelves
         val shelves = placedParts.groupBy { it.y }.toSortedMap()
-        var lastShelfMaxY = trimMargin
         
         for ((shelfY, partsInShelf) in shelves) {
             val maxHeight = partsInShelf.maxOf { it.height }
             val shelfEndY = shelfY + maxHeight
             
-            // Primary longitudinal cut at the end of the shelf (except last shelf boundary if it touches trim margin)
             if (shelfEndY < slabW - trimMargin) {
                 cutLines.add(
                     CutLine(
@@ -509,7 +551,6 @@ object StoneCutSolver {
             val sortedParts = partsInShelf.sortedBy { it.x }
             for (i in sortedParts.indices) {
                 val part = sortedParts[i]
-                val isLast = i == sortedParts.size - 1
 
                 val desc = StringBuilder()
                 desc.append("[$containerLabel] برش عرضی ردیف #$shelfNo در X = ${part.x + part.width + diskThickness / 2f} میلی‌متر ")
@@ -519,7 +560,6 @@ object StoneCutSolver {
                     desc.append(" (قطعه جهت کاهش ضایعات ۹۰ درجه چرخانده شده است).")
                 }
 
-                // Mention vein matching chain details
                 if (part.part.matchAdjacentTo.isNotEmpty()) {
                     desc.append(" *هشدار تطابق رگه: این قطعه بلافاصله در کنار قطعه ${part.part.matchAdjacentTo} چیده شده است تا هماهنگی رگه‌های طبیعی سنگ حفظ شود.*")
                 }
@@ -537,12 +577,12 @@ object StoneCutSolver {
         return instructions
     }
 
-    // A helper wrapper representing either a chain of parts or a single part packed as one block
     private class PackableItem(
         val parts: List<Part>,
         val width: Float,
         val height: Float,
-        val isSinglePart: Boolean
+        val isSinglePart: Boolean,
+        val isVerticalChain: Boolean = false
     ) {
         companion object {
             fun fromPart(part: Part): PackableItem {
@@ -554,16 +594,46 @@ object StoneCutSolver {
                 )
             }
 
-            fun fromChain(chain: List<Part>, diskThickness: Float): PackableItem {
-                // Layout chain parts horizontally side-by-side
-                val totalWidth = chain.sumOf { it.width.toDouble() }.toFloat() + (chain.size - 1) * diskThickness
-                val maxHeight = chain.maxOf { it.length }
-                return PackableItem(
-                    parts = chain,
-                    width = totalWidth,
-                    height = maxHeight,
-                    isSinglePart = false
-                )
+            fun fromChain(chain: List<Part>, diskThickness: Float, usableL: Float, usableW: Float): PackableItem {
+                val first = chain.firstOrNull()
+                val isAllWidthsEqual = chain.all { it.width == first?.width }
+                val isAllLengthsEqual = chain.all { it.length == first?.length }
+
+                val totalWidthH = chain.sumOf { it.width.toDouble() }.toFloat() + (chain.size - 1) * diskThickness
+                val maxHeightH = chain.maxOf { it.length }
+
+                val maxWidthV = chain.maxOf { it.width }
+                val totalHeightV = chain.sumOf { it.length.toDouble() }.toFloat() + (chain.size - 1) * diskThickness
+
+                // Fits in standard or transposed orientation
+                val fitsHorizontally = (totalWidthH <= usableL && maxHeightH <= usableW) || (totalWidthH <= usableW && maxHeightH <= usableL)
+                val fitsVertically = (maxWidthV <= usableL && totalHeightV <= usableW) || (maxWidthV <= usableW && totalHeightV <= usableL)
+
+                val stackVertically = when {
+                    fitsVertically && !fitsHorizontally -> true
+                    fitsHorizontally && !fitsVertically -> false
+                    isAllWidthsEqual -> true
+                    isAllLengthsEqual -> false
+                    else -> false
+                }
+
+                return if (stackVertically) {
+                    PackableItem(
+                        parts = chain,
+                        width = maxWidthV,
+                        height = totalHeightV,
+                        isSinglePart = false,
+                        isVerticalChain = true
+                    )
+                } else {
+                    PackableItem(
+                        parts = chain,
+                        width = totalWidthH,
+                        height = maxHeightH,
+                        isSinglePart = false,
+                        isVerticalChain = false
+                    )
+                }
             }
         }
 
@@ -596,12 +666,32 @@ object StoneCutSolver {
                         )
                     )
                 }
+            } else if (isVerticalChain) {
+                var currentY = startY
+                val totalLengthSum = parts.sumOf { it.length.toDouble() }.toFloat()
+                val gap = if (parts.size > 1) {
+                    (height - totalLengthSum) / (parts.size - 1)
+                } else 0f
+
+                for (part in parts) {
+                    list.add(
+                        PlacedPart(
+                            part = part,
+                            x = startX,
+                            y = currentY,
+                            width = part.width,
+                            height = part.length,
+                            isRotated = false,
+                            containerId = containerId
+                        )
+                    )
+                    currentY += part.length + gap
+                }
             } else {
-                // Multi-part chain: nested horizontally in original orientation to match vein
                 var currentX = startX
-                val diskThickness = if (parts.size > 1) {
-                    val gap = (width - parts.sumOf { it.width.toDouble() }.toFloat()) / (parts.size - 1)
-                    gap
+                val totalWidthSum = parts.sumOf { it.width.toDouble() }.toFloat()
+                val gap = if (parts.size > 1) {
+                    (width - totalWidthSum) / (parts.size - 1)
                 } else 0f
 
                 for (part in parts) {
@@ -609,14 +699,14 @@ object StoneCutSolver {
                         PlacedPart(
                             part = part,
                             x = currentX,
-                            y = startY, // align tops
+                            y = startY,
                             width = part.width,
                             height = part.length,
                             isRotated = false,
                             containerId = containerId
                         )
                     )
-                    currentX += part.width + diskThickness
+                    currentX += part.width + gap
                 }
             }
             return list
