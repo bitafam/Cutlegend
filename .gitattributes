@@ -1,0 +1,12 @@
+* text=auto
+
+# Denote all files that are truly binary and should not be modified by Git line-ending conversions.
+*.jar binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.keystore binary
+*.base64 text
