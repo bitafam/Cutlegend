@@ -25,14 +25,6 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Fix Corrupt Gradle Wrapper
-        run: |
-          mkdir -p gradle/wrapper
-          rm -f gradle/wrapper/gradle-wrapper.jar
-          curl -sSLo gradle/wrapper/gradle-wrapper.jar https://github.com/gradle/gradle/raw/v9.3.1/gradle/wrapper/gradle-wrapper.jar || \
-          curl -sSLo gradle/wrapper/gradle-wrapper.jar https://github.com/gradle/gradle/raw/main/gradle/wrapper/gradle-wrapper.jar || \
-          gradle wrapper --gradle-version 9.3.1
-
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
@@ -45,12 +37,9 @@ jobs:
             python3 -c "import base64; data = open('debug.keystore.base64', 'r').read().strip(); decoded = base64.b64decode(''.join(data.split())); open('debug.keystore', 'wb').write(decoded)"
           fi
 
-      - name: Make Gradlew Executable
-        run: chmod +x gradlew
-
       - name: Build Debug APK
         run: |
-          ./gradlew assembleDebug
+          gradle assembleDebug
 
       - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
