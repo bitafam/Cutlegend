@@ -31,15 +31,20 @@ jobs:
           gradle-version: 9.3.1
           validate-wrappers: false
 
-      - name: Decode Keystore
+      - name: Decode or Generate Keystore
         run: |
           if [ -f debug.keystore.base64 ]; then
             python3 -c "import base64; data = open('debug.keystore.base64', 'r').read().strip(); decoded = base64.b64decode(''.join(data.split())); open('debug.keystore', 'wb').write(decoded)"
+          else
+            keytool -genkey -v -keystore debug.keystore -keyalg RSA -keysize 2048 -validity 10000 \
+              -alias androiddebugkey -keypass android -storepass android \
+              -dname "CN=Android Debug,O=Android,C=US"
           fi
 
       - name: Build Debug APK
         run: |
-          gradle assembleDebug
+          chmod +x gradlew
+          ./gradlew assembleDebug
 
       - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
