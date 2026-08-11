@@ -70,7 +70,7 @@ object StoneCutSolver {
                                     y = trimMargin + currentY,
                                     width = pw,
                                     height = ph,
-                                    isRotated = pw != part.width,
+                                    isRotated = pw != part.length,
                                     isScrapPiece = true,
                                     containerId = "Scrap #${scrap.id}"
                                 )
@@ -100,7 +100,7 @@ object StoneCutSolver {
                                         y = trimMargin + currentY,
                                         width = pw,
                                         height = ph,
-                                        isRotated = pw != part.width,
+                                        isRotated = pw != part.length,
                                         isScrapPiece = true,
                                         containerId = "Scrap #${scrap.id}"
                                     )
@@ -412,9 +412,9 @@ object StoneCutSolver {
     }
 
     private fun getOrientations(part: Part): List<Pair<Float, Float>> {
-        val list = mutableListOf(Pair(part.width, part.length)) // Standard: Width (X) x Length (Y)
+        val list = mutableListOf(Pair(part.length, part.width)) // Standard: Length (X) x Width (Y)
         if (part.allowRotation) {
-            list.add(Pair(part.length, part.width)) // Rotated 90 deg
+            list.add(Pair(part.width, part.length)) // Rotated 90 deg
         }
         return list
     }
@@ -663,8 +663,8 @@ object StoneCutSolver {
             fun fromPart(part: Part): PackableItem {
                 return PackableItem(
                     parts = listOf(part),
-                    width = part.width,
-                    height = part.length,
+                    width = part.length,
+                    height = part.width,
                     isSinglePart = true
                 )
             }
@@ -674,11 +674,11 @@ object StoneCutSolver {
                 val isAllWidthsEqual = chain.all { it.width == first?.width }
                 val isAllLengthsEqual = chain.all { it.length == first?.length }
 
-                val totalWidthH = chain.sumOf { it.width.toDouble() }.toFloat() + (chain.size - 1) * diskThickness
-                val maxHeightH = chain.maxOf { it.length }
+                val totalWidthH = chain.sumOf { it.length.toDouble() }.toFloat() + (chain.size - 1) * diskThickness
+                val maxHeightH = chain.maxOf { it.width }
 
-                val maxWidthV = chain.maxOf { it.width }
-                val totalHeightV = chain.sumOf { it.length.toDouble() }.toFloat() + (chain.size - 1) * diskThickness
+                val maxWidthV = chain.maxOf { it.length }
+                val totalHeightV = chain.sumOf { it.width.toDouble() }.toFloat() + (chain.size - 1) * diskThickness
 
                 // Fits in standard or transposed orientation
                 val fitsHorizontally = (totalWidthH <= usableL && maxHeightH <= usableW) || (totalWidthH <= usableW && maxHeightH <= usableL)
@@ -687,8 +687,8 @@ object StoneCutSolver {
                 val stackVertically = when {
                     fitsVertically && !fitsHorizontally -> true
                     fitsHorizontally && !fitsVertically -> false
-                    isAllWidthsEqual -> true
-                    isAllLengthsEqual -> false
+                    isAllLengthsEqual -> true
+                    isAllWidthsEqual -> false
                     else -> false
                 }
 
@@ -722,8 +722,8 @@ object StoneCutSolver {
                             part = part,
                             x = startX,
                             y = startY,
-                            width = part.length,
-                            height = part.width,
+                            width = part.width,
+                            height = part.length,
                             isRotated = true,
                             containerId = containerId
                         )
@@ -734,8 +734,8 @@ object StoneCutSolver {
                             part = part,
                             x = startX,
                             y = startY,
-                            width = part.width,
-                            height = part.length,
+                            width = part.length,
+                            height = part.width,
                             isRotated = false,
                             containerId = containerId
                         )
@@ -743,9 +743,9 @@ object StoneCutSolver {
                 }
             } else if (isVerticalChain) {
                 var currentY = startY
-                val totalLengthSum = parts.sumOf { it.length.toDouble() }.toFloat()
+                val totalWidthSum = parts.sumOf { it.width.toDouble() }.toFloat()
                 val gap = if (parts.size > 1) {
-                    (height - totalLengthSum) / (parts.size - 1)
+                    (height - totalWidthSum) / (parts.size - 1)
                 } else 0f
 
                 for (part in parts) {
@@ -754,19 +754,19 @@ object StoneCutSolver {
                             part = part,
                             x = startX,
                             y = currentY,
-                            width = part.width,
-                            height = part.length,
+                            width = part.length,
+                            height = part.width,
                             isRotated = false,
                             containerId = containerId
                         )
                     )
-                    currentY += part.length + gap
+                    currentY += part.width + gap
                 }
             } else {
                 var currentX = startX
-                val totalWidthSum = parts.sumOf { it.width.toDouble() }.toFloat()
+                val totalLengthSum = parts.sumOf { it.length.toDouble() }.toFloat()
                 val gap = if (parts.size > 1) {
-                    (width - totalWidthSum) / (parts.size - 1)
+                    (width - totalLengthSum) / (parts.size - 1)
                 } else 0f
 
                 for (part in parts) {
@@ -775,13 +775,13 @@ object StoneCutSolver {
                             part = part,
                             x = currentX,
                             y = startY,
-                            width = part.width,
-                            height = part.length,
+                            width = part.length,
+                            height = part.width,
                             isRotated = false,
                             containerId = containerId
                         )
                     )
-                    currentX += part.width + gap
+                    currentX += part.length + gap
                 }
             }
             return list
