@@ -38,6 +38,22 @@ import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 
+fun String.toEnglishDigits(): String {
+    var result = this
+    val farsiDigits = arrayOf("۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹")
+    val arabicDigits = arrayOf("٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩")
+    for (i in 0..9) {
+        result = result.replace(farsiDigits[i], i.toString())
+        result = result.replace(arabicDigits[i], i.toString())
+    }
+    result = result.replace("٫", ".").replace(",", ".")
+    return result
+}
+
+fun String.toFloatOrNullWithPersian(): Float? {
+    return this.toEnglishDigits().trim().toFloatOrNull()
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StoneCutApp(viewModel: StoneCutViewModel) {
@@ -756,8 +772,8 @@ fun InventorySettingsTab(
                             value = editSlabL,
                             onValueChange = {
                                 editSlabL = it
-                                it.toFloatOrNull()?.let { l ->
-                                    viewModel.updateStandardSlab(l, editSlabW.toFloatOrNull() ?: 1800f, editSlabT.toFloatOrNull() ?: 20f)
+                                it.toFloatOrNullWithPersian()?.let { l ->
+                                    viewModel.updateStandardSlab(l, editSlabW.toFloatOrNullWithPersian() ?: 1800f, editSlabT.toFloatOrNullWithPersian() ?: 20f)
                                 }
                             },
                             label = { Text("طول اسلب L (میلی‌متر)") },
@@ -768,8 +784,8 @@ fun InventorySettingsTab(
                             value = editSlabW,
                             onValueChange = {
                                 editSlabW = it
-                                it.toFloatOrNull()?.let { w ->
-                                    viewModel.updateStandardSlab(editSlabL.toFloatOrNull() ?: 3000f, w, editSlabT.toFloatOrNull() ?: 20f)
+                                it.toFloatOrNullWithPersian()?.let { w ->
+                                    viewModel.updateStandardSlab(editSlabL.toFloatOrNullWithPersian() ?: 3000f, w, editSlabT.toFloatOrNullWithPersian() ?: 20f)
                                 }
                             },
                             label = { Text("عرض اسلب W (میلی‌متر)") },
@@ -782,8 +798,8 @@ fun InventorySettingsTab(
                         value = editSlabT,
                         onValueChange = {
                             editSlabT = it
-                            it.toFloatOrNull()?.let { t ->
-                                viewModel.updateStandardSlab(editSlabL.toFloatOrNull() ?: 3000f, editSlabW.toFloatOrNull() ?: 1800f, t)
+                            it.toFloatOrNullWithPersian()?.let { t ->
+                                viewModel.updateStandardSlab(editSlabL.toFloatOrNullWithPersian() ?: 3000f, editSlabW.toFloatOrNullWithPersian() ?: 1800f, t)
                             }
                         },
                         label = { Text("ضخامت اسلب T (میلی‌متر)") },
@@ -813,7 +829,7 @@ fun InventorySettingsTab(
                             value = editKerf,
                             onValueChange = {
                                 editKerf = it
-                                it.toFloatOrNull()?.let { k ->
+                                it.toFloatOrNullWithPersian()?.let { k ->
                                     viewModel.updateMachineParameters(k, trimMargin)
                                 }
                             },
@@ -825,7 +841,7 @@ fun InventorySettingsTab(
                             value = editTrim,
                             onValueChange = {
                                 editTrim = it
-                                it.toFloatOrNull()?.let { t ->
+                                it.toFloatOrNullWithPersian()?.let { t ->
                                     viewModel.updateMachineParameters(diskThickness, t)
                                 }
                             },
@@ -899,8 +915,8 @@ fun InventorySettingsTab(
                         )
                         IconButton(
                             onClick = {
-                                val l = newScrapL.toFloatOrNull()
-                                val w = newScrapW.toFloatOrNull()
+                                val l = newScrapL.toFloatOrNullWithPersian()
+                                val w = newScrapW.toFloatOrNullWithPersian()
                                 if (l != null && w != null) {
                                     viewModel.addScrap(l, w)
                                     newScrapL = ""
@@ -1209,8 +1225,8 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
                         }
                         Button(
                             onClick = {
-                                val l = lStr.toFloatOrNull()
-                                val w = wStr.toFloatOrNull()
+                                val l = lStr.toFloatOrNullWithPersian()
+                                val w = wStr.toFloatOrNullWithPersian()
                                 if (name.isNotEmpty() && l != null && w != null) {
                                     val isAnyBookmatchSelected = bookmatchLeft || bookmatchTop || bookmatchRight || bookmatchBottom
                                     if (editingPart == null) {
