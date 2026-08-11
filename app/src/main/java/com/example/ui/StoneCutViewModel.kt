@@ -198,8 +198,8 @@ class StoneCutViewModel(application: Application) : AndroidViewModel(application
 
     fun loadWallCladdingTemplate() {
         _parts.value = listOf(
-            Part(id = "A", name = "پنل دیواری چپ", length = 1200f, width = 1400f, allowRotation = false, isBookmatch = true, bookmatchRight = true),
-            Part(id = "B", name = "پنل دیواری راست بوک‌مچ", length = 1200f, width = 1400f, allowRotation = false, matchAdjacentTo = "A", isBookmatch = true, bookmatchLeft = true),
+            Part(id = "A", name = "پنل دیواری چپ", length = 1200f, width = 1400f, allowRotation = false),
+            Part(id = "B", name = "پنل دیواری راست هماهنگ رگه", length = 1200f, width = 1400f, allowRotation = false, matchAdjacentTo = "A"),
             Part(id = "C", name = "باند تزیینی بالای دیوار", length = 400f, width = 2800f, allowRotation = false, miterTop = true),
             Part(id = "D", name = "نوار حاشیه چپ کوچک", length = 150f, width = 600f, allowRotation = true),
             Part(id = "E", name = "نوار حاشیه راست کوچک", length = 150f, width = 600f, allowRotation = true)
@@ -591,7 +591,7 @@ class StoneCutViewModel(application: Application) : AndroidViewModel(application
                         // Draw Part Green Outlines
                         paint.color = Color.parseColor("#4CAF50")
                         paint.style = Paint.Style.STROKE
-                        paint.strokeWidth = 1.2f
+                        paint.strokeWidth = 1.0f
                         canvas.drawRect(px, py, px + pw, py + ph, paint)
                         paint.style = Paint.Style.FILL // Reset
 
@@ -600,23 +600,18 @@ class StoneCutViewModel(application: Application) : AndroidViewModel(application
                         val drawMiterRight = if (part.isRotated) part.part.miterTop else part.part.miterRight
                         val drawMiterBottom = if (part.isRotated) part.part.miterRight else part.part.miterBottom
 
-                        val drawBookmatchLeft = if (part.isRotated) part.part.bookmatchBottom else part.part.bookmatchLeft
-                        val drawBookmatchTop = if (part.isRotated) part.part.bookmatchLeft else part.part.bookmatchTop
-                        val drawBookmatchRight = if (part.isRotated) part.part.bookmatchTop else part.part.bookmatchRight
-                        val drawBookmatchBottom = if (part.isRotated) part.part.bookmatchRight else part.part.bookmatchBottom
-
-                        // Draw Miter Hatching (Black Hatching)
+                        // Draw Miter Hatching (Black Hatching, thinner and smaller)
                         val hatchPaint = Paint().apply {
                             color = Color.BLACK
-                            strokeWidth = 1f
+                            strokeWidth = 0.5f
                             style = Paint.Style.STROKE
                         }
                         
                         if (drawMiterLeft) {
-                            val step = 8f
+                            val step = 4f
                             var currY = py
                             while (currY < py + ph) {
-                                val nextY = Math.min(currY + 6f, py + ph)
+                                val nextY = Math.min(currY + 2.5f, py + ph)
                                 val nextX = px + (nextY - currY)
                                 canvas.drawLine(px, currY, nextX, nextY, hatchPaint)
                                 currY += step
@@ -624,15 +619,15 @@ class StoneCutViewModel(application: Application) : AndroidViewModel(application
                             // Bold black edge
                             paint.color = Color.BLACK
                             paint.style = Paint.Style.STROKE
-                            paint.strokeWidth = 2f
+                            paint.strokeWidth = 1.0f
                             canvas.drawLine(px, py, px, py + ph, paint)
                             paint.style = Paint.Style.FILL // Reset
                         }
                         if (drawMiterRight) {
-                            val step = 8f
+                            val step = 4f
                             var currY = py
                             while (currY < py + ph) {
-                                val nextY = Math.min(currY + 6f, py + ph)
+                                val nextY = Math.min(currY + 2.5f, py + ph)
                                 val nextX = px + pw - (nextY - currY)
                                 canvas.drawLine(px + pw, currY, nextX, nextY, hatchPaint)
                                 currY += step
@@ -640,15 +635,15 @@ class StoneCutViewModel(application: Application) : AndroidViewModel(application
                             // Bold black edge
                             paint.color = Color.BLACK
                             paint.style = Paint.Style.STROKE
-                            paint.strokeWidth = 2f
+                            paint.strokeWidth = 1.0f
                             canvas.drawLine(px + pw, py, px + pw, py + ph, paint)
                             paint.style = Paint.Style.FILL // Reset
                         }
                         if (drawMiterTop) {
-                            val step = 8f
+                            val step = 4f
                             var currX = px
                             while (currX < px + pw) {
-                                val nextX = Math.min(currX + 6f, px + pw)
+                                val nextX = Math.min(currX + 2.5f, px + pw)
                                 val nextY = py + (nextX - currX)
                                 canvas.drawLine(currX, py, nextX, nextY, hatchPaint)
                                 currX += step
@@ -656,15 +651,15 @@ class StoneCutViewModel(application: Application) : AndroidViewModel(application
                             // Bold black edge
                             paint.color = Color.BLACK
                             paint.style = Paint.Style.STROKE
-                            paint.strokeWidth = 2f
+                            paint.strokeWidth = 1.0f
                             canvas.drawLine(px, py, px + pw, py, paint)
                             paint.style = Paint.Style.FILL // Reset
                         }
                         if (drawMiterBottom) {
-                            val step = 8f
+                            val step = 4f
                             var currX = px
                             while (currX < px + pw) {
-                                val nextX = Math.min(currX + 6f, px + pw)
+                                val nextX = Math.min(currX + 2.5f, px + pw)
                                 val nextY = py + ph - (nextX - currX)
                                 canvas.drawLine(currX, py + ph, nextX, nextY, hatchPaint)
                                 currX += step
@@ -672,52 +667,17 @@ class StoneCutViewModel(application: Application) : AndroidViewModel(application
                             // Bold black edge
                             paint.color = Color.BLACK
                             paint.style = Paint.Style.STROKE
-                            paint.strokeWidth = 2f
+                            paint.strokeWidth = 1.0f
                             canvas.drawLine(px, py + ph, px + pw, py + ph, paint)
                             paint.style = Paint.Style.FILL // Reset
                         }
 
-                        // Draw Bookmatch (Double Orange Lines)
-                        val orangeColor = Color.parseColor("#FF9800")
-                        val bmPaint = Paint().apply {
-                            color = orangeColor
-                            strokeWidth = 1.5f
-                            style = Paint.Style.STROKE
-                        }
 
-                        if (drawBookmatchLeft) {
-                            canvas.drawLine(px + 1.2f, py, px + 1.2f, py + ph, bmPaint)
-                            canvas.drawLine(px + 3.5f, py, px + 3.5f, py + ph, bmPaint)
-                        }
-                        if (drawBookmatchRight) {
-                            canvas.drawLine(px + pw - 1.2f, py, px + pw - 1.2f, py + ph, bmPaint)
-                            canvas.drawLine(px + pw - 3.5f, py, px + pw - 3.5f, py + ph, bmPaint)
-                        }
-                        if (drawBookmatchTop) {
-                            canvas.drawLine(px, py + 1.2f, px + pw, py + 1.2f, bmPaint)
-                            canvas.drawLine(px, py + 3.5f, px + pw, py + 3.5f, bmPaint)
-                        }
-                        if (drawBookmatchBottom) {
-                            canvas.drawLine(px, py + ph - 1.2f, px + pw, py + ph - 1.2f, bmPaint)
-                            canvas.drawLine(px, py + ph - 3.5f, px + pw, py + ph - 3.5f, bmPaint)
-                        }
 
-                        // Text labels centered
-                        textPaint.color = Color.parseColor("#1B5E20")
-                        textPaint.textSize = 10f
-                        textPaint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-                        
-                        val labelId = "قطعه ${part.part.id}"
-                        val textW = textPaint.measureText(labelId)
-                        canvas.drawText(labelId, px + pw / 2f - textW / 2f, py + ph / 2f + 3f, textPaint)
-
-                        if (pw > 45f && ph > 25f) {
-                            textPaint.textSize = 6.5f
-                            textPaint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
-                            val dimsText = "${part.part.width.toInt()}x${part.part.length.toInt()}"
-                            val dimsW = textPaint.measureText(dimsText)
-                            canvas.drawText(dimsText, px + pw / 2f - dimsW / 2f, py + ph / 2f + 12f, textPaint)
-                        }
+                        // Draw Dimensions inside/outside AutoCAD-style with leader arrows
+                        val horizDim = if (part.isRotated) part.part.width else part.part.length
+                        val vertDim = if (part.isRotated) part.part.length else part.part.width
+                        drawPartDimensions(canvas, px, py, pw, ph, horizDim, vertDim, part.part.id)
                     }
 
                     // Draw useful offcuts inside the slab
@@ -740,13 +700,60 @@ class StoneCutViewModel(application: Application) : AndroidViewModel(application
                         canvas.drawPath(dashPath, paint)
                         paint.style = Paint.Style.FILL // Reset
 
-                        // Draw text "پرت مفید"
+                        // Draw text "پرت" and its dimensions
                         textPaint.color = Color.parseColor("#E65100")
-                        textPaint.textSize = 8f
+                        textPaint.textSize = 7.5f
                         textPaint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
                         val lbl = "پرت"
                         val lblW = textPaint.measureText(lbl)
-                        canvas.drawText(lbl, ox_off + ow_off / 2f - lblW / 2f, oy_off + oh_off / 2f + 3f, textPaint)
+                        canvas.drawText(lbl, ox_off + ow_off / 2f - lblW / 2f, oy_off + oh_off / 2f - 2f, textPaint)
+
+                        textPaint.textSize = 6.5f
+                        textPaint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+                        val offcutDims = "${offcut.width.toInt()}×${offcut.height.toInt()}"
+                        val dimsW = textPaint.measureText(offcutDims)
+                        canvas.drawText(offcutDims, ox_off + ow_off / 2f - dimsW / 2f, oy_off + oh_off / 2f + 8f, textPaint)
+                    }
+
+                    // Draw Vein Match Arrows linking connected parts (A ➔ B) in PDF
+                    layout.placedParts.forEach { part ->
+                        if (part.part.matchAdjacentTo.isNotEmpty()) {
+                            val parent = layout.placedParts.find { it.part.id == part.part.matchAdjacentTo }
+                            if (parent != null) {
+                                val fromX = drawStartX + parent.x * scale + (parent.width * scale) / 2f
+                                val fromY = drawStartY + parent.y * scale + (parent.height * scale) / 2f
+                                val toX = drawStartX + part.x * scale + (part.width * scale) / 2f
+                                val toY = drawStartY + part.y * scale + (part.height * scale) / 2f
+
+                                // Draw line
+                                val arrowPaint = Paint().apply {
+                                    color = Color.parseColor("#D97706") // Golden
+                                    strokeWidth = 2.0f
+                                    style = Paint.Style.STROKE
+                                    isAntiAlias = true
+                                }
+                                canvas.drawLine(fromX, fromY, toX, toY, arrowPaint)
+
+                                // Draw arrowhead
+                                val angle = Math.atan2((toY - fromY).toDouble(), (toX - fromX).toDouble())
+                                val arrowLength = 8f
+                                val arrowAngle = Math.PI / 6 // 30 degrees
+                                val path = android.graphics.Path().apply {
+                                    moveTo(toX, toY)
+                                    lineTo(
+                                        (toX - arrowLength * Math.cos(angle - arrowAngle)).toFloat(),
+                                        (toY - arrowLength * Math.sin(angle - arrowAngle)).toFloat()
+                                    )
+                                    lineTo(
+                                        (toX - arrowLength * Math.cos(angle + arrowAngle)).toFloat(),
+                                        (toY - arrowLength * Math.sin(angle + arrowAngle)).toFloat()
+                                    )
+                                    close()
+                                }
+                                arrowPaint.style = Paint.Style.FILL
+                                canvas.drawPath(path, arrowPaint)
+                            }
+                        }
                     }
 
                     // Operator Instructions section below
@@ -764,7 +771,10 @@ class StoneCutViewModel(application: Application) : AndroidViewModel(application
                     val stepsList = layout.instructions
 
                     stepsList.forEach { step ->
-                        if (currentY > pageHeight - 50f) {
+                        val textHeight = getPersianTextHeight(step.description, 60f, pageWidth - 30f, textPaint)
+                        val stepHeight = Math.max(22f, textHeight + 12f)
+
+                        if (currentY + stepHeight > pageHeight - 40f) {
                             pdfDocument.finishPage(page)
                             pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNumber++).create()
                             page = pdfDocument.startPage(pageInfo)
@@ -802,7 +812,7 @@ class StoneCutViewModel(application: Application) : AndroidViewModel(application
                         
                         drawPersianTextColumn(canvas, step.description, 60f, pageWidth - 30f, currentY + 2f, textPaint)
 
-                        currentY += 28f
+                        currentY += stepHeight
                     }
 
                     pdfDocument.finishPage(page)
@@ -848,6 +858,274 @@ class StoneCutViewModel(application: Application) : AndroidViewModel(application
         canvas.translate(startX, y - 10f)
         staticLayout.draw(canvas)
         canvas.restore()
+    }
+
+    private fun getPersianTextHeight(text: String, startX: Float, endX: Float, paint: TextPaint): Float {
+        val width = (endX - startX).toInt()
+        if (width <= 0) return 0f
+        val staticLayout = StaticLayout.Builder.obtain(text, 0, text.length, paint, width)
+            .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+            .build()
+        return staticLayout.height.toFloat()
+    }
+
+    private fun drawPartDimensions(
+        canvas: Canvas,
+        px: Float,
+        py: Float,
+        pw: Float,
+        ph: Float,
+        horizDim: Float,
+        vertDim: Float,
+        partId: String
+    ) {
+        val textPaint = Paint().apply {
+            color = Color.parseColor("#37474F")
+            textSize = 7f
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+            isAntiAlias = true
+        }
+        val linePaint = Paint().apply {
+            color = Color.parseColor("#78909C")
+            strokeWidth = 0.6f
+            style = Paint.Style.STROKE
+            isAntiAlias = true
+        }
+        val arrowPaint = Paint().apply {
+            color = Color.parseColor("#78909C")
+            style = Paint.Style.FILL
+            isAntiAlias = true
+        }
+
+        val canDrawInsideH = pw > 55f
+        val canDrawInsideV = ph > 35f
+
+        // 1. Draw Part ID (centered)
+        val idPaint = Paint(textPaint).apply {
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            textSize = 8.5f
+            color = Color.parseColor("#1B5E20")
+        }
+        val idText = "قطعه $partId"
+        val idW = idPaint.measureText(idText)
+        canvas.drawText(idText, px + pw / 2f - idW / 2f, py + ph / 2f + 3f, idPaint)
+
+        // 2. Draw Horizontal Dimension
+        if (canDrawInsideH) {
+            val dimY = py + 7f
+            canvas.drawLine(px + 4f, dimY, px + pw - 4f, dimY, linePaint)
+            drawArrowHeadH(canvas, px + 4f, dimY, isLeft = true, arrowPaint)
+            drawArrowHeadH(canvas, px + pw - 4f, dimY, isLeft = false, arrowPaint)
+            val tStr = "${horizDim.toInt()}"
+            val tW = textPaint.measureText(tStr)
+            canvas.drawText(tStr, px + pw / 2f - tW / 2f, dimY - 2f, textPaint)
+        }
+
+        // 3. Draw Vertical Dimension
+        if (canDrawInsideV) {
+            val dimX = px + 7f
+            canvas.drawLine(dimX, py + 4f, dimX, py + ph - 4f, linePaint)
+            drawArrowHeadV(canvas, dimX, py + 4f, isTop = true, arrowPaint)
+            drawArrowHeadV(canvas, dimX, py + ph - 4f, isTop = false, arrowPaint)
+            val tStr = "${vertDim.toInt()}"
+            canvas.drawText(tStr, dimX + 3f, py + ph / 2f + 2.5f, textPaint)
+        }
+
+        // 4. If too small, draw a leader pointing from outside
+        if (!canDrawInsideH || !canDrawInsideV) {
+            val startX = px + pw / 2f
+            val startY = py + ph / 2f
+            
+            // Choose clean leader target coordinates outside part
+            val endX = px - 15f
+            val endY = py - 10f
+
+            canvas.drawLine(startX, startY, endX, endY, linePaint)
+            canvas.drawLine(endX, endY, endX - 10f, endY, linePaint) // leader land
+            drawArrowToPoint(canvas, startX, startY, endX, endY, arrowPaint)
+
+            val dimsText = "${horizDim.toInt()} × ${vertDim.toInt()}"
+            val textX = endX - 11f - textPaint.measureText(dimsText)
+            canvas.drawText(dimsText, textX, endY + 2.5f, textPaint)
+        }
+    }
+
+    private fun drawArrowHeadH(canvas: Canvas, x: Float, y: Float, isLeft: Boolean, paint: Paint) {
+        val path = android.graphics.Path()
+        if (isLeft) {
+            path.moveTo(x, y)
+            path.lineTo(x + 3.5f, y - 2f)
+            path.lineTo(x + 3.5f, y + 2f)
+        } else {
+            path.moveTo(x, y)
+            path.lineTo(x - 3.5f, y - 2f)
+            path.lineTo(x - 3.5f, y + 2f)
+        }
+        path.close()
+        canvas.drawPath(path, paint)
+    }
+
+    private fun drawArrowHeadV(canvas: Canvas, x: Float, y: Float, isTop: Boolean, paint: Paint) {
+        val path = android.graphics.Path()
+        if (isTop) {
+            path.moveTo(x, y)
+            path.lineTo(x - 2f, y + 3.5f)
+            path.lineTo(x + 2f, y + 3.5f)
+        } else {
+            path.moveTo(x, y)
+            path.lineTo(x - 2f, y - 3.5f)
+            path.lineTo(x + 2f, y - 3.5f)
+        }
+        path.close()
+        canvas.drawPath(path, paint)
+    }
+
+    private fun drawArrowToPoint(canvas: Canvas, targetX: Float, targetY: Float, fromX: Float, fromY: Float, paint: Paint) {
+        val dx = targetX - fromX
+        val dy = targetY - fromY
+        val len = Math.hypot(dx.toDouble(), dy.toDouble()).toFloat()
+        if (len < 0.5f) return
+        val ux = dx / len
+        val uy = dy / len
+
+        val path = android.graphics.Path()
+        path.moveTo(targetX, targetY)
+        path.lineTo(targetX - ux * 4f + uy * 2f, targetY - uy * 4f - ux * 2f)
+        path.lineTo(targetX - ux * 4f - uy * 2f, targetY - uy * 4f + ux * 2f)
+        path.close()
+        canvas.drawPath(path, paint)
+    }
+
+    // --- AutoCAD DXF Export ---
+
+    fun generateDxfExport(context: Context, onComplete: (File) -> Unit, onError: (Exception) -> Unit) {
+        viewModelScope.launch(Dispatchers.Default) {
+            try {
+                val result = _optimizationResult.value
+                if (result == null || result.slabLayouts.isEmpty()) {
+                    throw Exception("طرح بهینه‌سازی وجود ندارد. ابتدا دکمه محاسبه چیدمان را بزنید.")
+                }
+
+                val sb = StringBuilder()
+                sb.append("  0\nSECTION\n  2\nENTITIES\n")
+
+                var layoutOffsetOffset = 0f
+                val spacingBetweenSlabs = 1000f
+
+                result.slabLayouts.forEachIndexed { idx, layout ->
+                    val ox = layoutOffsetOffset
+                    val oy = 0f
+                    val L = layout.originalLength
+                    val W = layout.originalWidth
+
+                    // 1. Slab Boundary
+                    drawDxfRect(sb, "SLAB_BORDER", ox, oy, ox + L, oy + W, colorIndex = 7)
+                    
+                    val slabLabel = if (layout.isScrap) "SCRAP SLAB #${idx + 1}" else "SLAB #${idx + 1}"
+                    drawDxfText(sb, "SLAB_BORDER", ox + 50f, oy + W + 50f, 60f, "$slabLabel (${L.toInt()}x${W.toInt()} mm)")
+
+                    // 2. Placed Parts
+                    layout.placedParts.forEach { part ->
+                        val px = ox + part.x
+                        val py = oy + part.y
+                        val pw = part.width
+                        val ph = part.height
+
+                        drawDxfRect(sb, "CUT_PARTS", px, py, px + pw, py + ph, colorIndex = 3) // Green
+
+                        val label = "PART ${part.part.id}"
+                        val sizeText = "${part.part.length.toInt()}x${part.part.width.toInt()}"
+                        drawDxfText(sb, "CUT_PARTS", px + pw / 2f, py + ph / 2f + 20f, 30f, label, colorIndex = 3, justifyCenter = true)
+                        drawDxfText(sb, "CUT_PARTS", px + pw / 2f, py + ph / 2f - 20f, 22f, sizeText, colorIndex = 3, justifyCenter = true)
+
+                        // 3. Miters
+                        val drawMiterLeft = if (part.isRotated) part.part.miterBottom else part.part.miterLeft
+                        val drawMiterTop = if (part.isRotated) part.part.miterLeft else part.part.miterTop
+                        val drawMiterRight = if (part.isRotated) part.part.miterTop else part.part.miterRight
+                        val drawMiterBottom = if (part.isRotated) part.part.miterRight else part.part.miterBottom
+
+                        if (drawMiterLeft) drawDxfLine(sb, "MITER_LINES", px + 5f, py, px + 5f, py + ph, colorIndex = 4) // Cyan
+                        if (drawMiterRight) drawDxfLine(sb, "MITER_LINES", px + pw - 5f, py, px + pw - 5f, py + ph, colorIndex = 4)
+                        if (drawMiterTop) drawDxfLine(sb, "MITER_LINES", px, py + ph - 5f, px + pw, py + ph - 5f, colorIndex = 4)
+                        if (drawMiterBottom) drawDxfLine(sb, "MITER_LINES", px, py + 5f, px + pw, py + 5f, colorIndex = 4)
+
+
+                    }
+
+                    // 3. Useful Offcuts
+                    layout.offcuts.forEach { offcut ->
+                        val ox_off = ox + offcut.x
+                        val oy_off = oy + offcut.y
+                        val ow_off = offcut.width
+                        val oh_off = offcut.height
+
+                        drawDxfRect(sb, "SCRAP_OFFCUT", ox_off, oy_off, ox_off + ow_off, oy_off + oh_off, colorIndex = 30) // Orange
+                        drawDxfText(sb, "SCRAP_OFFCUT", ox_off + ow_off / 2f, oy_off + oh_off / 2f, 25f, "SCRAP (${ow_off.toInt()}x${oh_off.toInt()})", colorIndex = 30, justifyCenter = true)
+                    }
+
+                    // 4. Cut Lines
+                    layout.cutLines.forEach { cut ->
+                        val cxStart = ox + cut.startX
+                        val cyStart = oy + cut.startY
+                        val cxEnd = ox + cut.endX
+                        val cyEnd = oy + cut.endY
+                        drawDxfLine(sb, "SAW_CUT_LINES", cxStart, cyStart, cxEnd, cyEnd, colorIndex = 1) // Red
+                    }
+
+                    layoutOffsetOffset += L + spacingBetweenSlabs
+                }
+
+                sb.append("  0\nENDSEC\n  0\nEOF\n")
+
+                val dxfFile = File(context.cacheDir, "stone_cut_layouts_${System.currentTimeMillis()}.dxf")
+                val fos = FileOutputStream(dxfFile)
+                fos.write(sb.toString().toByteArray())
+                fos.close()
+
+                withContext(Dispatchers.Main) {
+                    onComplete(dxfFile)
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    onError(e)
+                }
+            }
+        }
+    }
+
+    private fun drawDxfLine(sb: StringBuilder, layer: String, x1: Float, y1: Float, x2: Float, y2: Float, colorIndex: Int = 7) {
+        sb.append("  0\nLINE\n")
+        sb.append("  8\n$layer\n")
+        sb.append(" 62\n$colorIndex\n")
+        sb.append(" 10\n$x1\n")
+        sb.append(" 20\n$y1\n")
+        sb.append(" 30\n0.0\n")
+        sb.append(" 11\n$x2\n")
+        sb.append(" 21\n$y2\n")
+        sb.append(" 31\n0.0\n")
+    }
+
+    private fun drawDxfRect(sb: StringBuilder, layer: String, x1: Float, y1: Float, x2: Float, y2: Float, colorIndex: Int = 7) {
+        drawDxfLine(sb, layer, x1, y1, x2, y1, colorIndex)
+        drawDxfLine(sb, layer, x2, y1, x2, y2, colorIndex)
+        drawDxfLine(sb, layer, x2, y2, x1, y2, colorIndex)
+        drawDxfLine(sb, layer, x1, y2, x1, y1, colorIndex)
+    }
+
+    private fun drawDxfText(sb: StringBuilder, layer: String, x: Float, y: Float, height: Float, text: String, colorIndex: Int = 7, justifyCenter: Boolean = false) {
+        sb.append("  0\nTEXT\n")
+        sb.append("  8\n$layer\n")
+        sb.append(" 62\n$colorIndex\n")
+        sb.append(" 10\n$x\n")
+        sb.append(" 20\n$y\n")
+        sb.append(" 30\n0.0\n")
+        sb.append(" 40\n$height\n")
+        sb.append("  1\n$text\n")
+        if (justifyCenter) {
+            sb.append(" 72\n  1\n")
+            sb.append(" 11\n$x\n")
+            sb.append(" 21\n$y\n")
+        }
     }
 }
 

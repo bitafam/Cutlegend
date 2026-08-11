@@ -370,6 +370,55 @@ fun StoneCutApp(viewModel: StoneCutViewModel) {
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("خروجی PDF", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
+
+                    Spacer(modifier = Modifier.width(6.dp))
+
+                    // DXF Button
+                    var dxfLoading by remember { mutableStateOf(false) }
+                    Button(
+                        onClick = {
+                            dxfLoading = true
+                            viewModel.generateDxfExport(
+                                context = context,
+                                onComplete = { file ->
+                                    dxfLoading = false
+                                    try {
+                                        val authority = "${context.packageName}.fileprovider"
+                                        val uri = androidx.core.content.FileProvider.getUriForFile(context, authority, file)
+                                        val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                            type = "application/dxf"
+                                            putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                                            flags = android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                        }
+                                        context.startActivity(android.content.Intent.createChooser(shareIntent, "اشتراک‌گذاری نقشه اتوکد DXF"))
+                                    } catch (ex: Exception) {
+                                        ex.printStackTrace()
+                                        android.widget.Toast.makeText(context, "خطا در خروجی اتوکد", android.widget.Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                onError = { ex ->
+                                    dxfLoading = false
+                                    android.widget.Toast.makeText(context, "خطا: ${ex.message}", android.widget.Toast.LENGTH_LONG).show()
+                                }
+                            )
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondary,
+                            contentColor = MaterialTheme.colorScheme.onSecondary
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                        modifier = Modifier.height(32.dp),
+                        enabled = !dxfLoading
+                    ) {
+                        if (dxfLoading) {
+                            CircularProgressIndicator(modifier = Modifier.size(12.dp), color = MaterialTheme.colorScheme.onSecondary, strokeWidth = 1.5.dp)
+                        } else {
+                            Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(14.dp))
+                        }
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("خروجی DXF (اتوکد)", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
 
@@ -1006,10 +1055,7 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
     var miterRight by remember { mutableStateOf(false) }
     var miterBottom by remember { mutableStateOf(false) }
 
-    var bookmatchLeft by remember { mutableStateOf(false) }
-    var bookmatchTop by remember { mutableStateOf(false) }
-    var bookmatchRight by remember { mutableStateOf(false) }
-    var bookmatchBottom by remember { mutableStateOf(false) }
+    var isBookmatch by remember { mutableStateOf(false) }
 
     var editingPart by remember { mutableStateOf<Part?>(null) }
     var expandedDropdown by remember { mutableStateOf(false) }
@@ -1025,10 +1071,7 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
             miterTop = editingPart!!.miterTop
             miterRight = editingPart!!.miterRight
             miterBottom = editingPart!!.miterBottom
-            bookmatchLeft = editingPart!!.bookmatchLeft
-            bookmatchTop = editingPart!!.bookmatchTop
-            bookmatchRight = editingPart!!.bookmatchRight
-            bookmatchBottom = editingPart!!.bookmatchBottom
+            isBookmatch = editingPart!!.isBookmatch
         } else {
             name = ""
             lStr = ""
@@ -1039,10 +1082,7 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
             miterTop = false
             miterRight = false
             miterBottom = false
-            bookmatchLeft = false
-            bookmatchTop = false
-            bookmatchRight = false
-            bookmatchBottom = false
+            isBookmatch = false
         }
     }
 
@@ -1179,37 +1219,7 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Bookmatch Edges Selection
-                    Text("لبه‌های بوک‌مچ (طرح قرینه):", fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        FilterChip(
-                            selected = bookmatchLeft,
-                            onClick = { bookmatchLeft = !bookmatchLeft },
-                            label = { Text("چپ", fontSize = 11.sp) }
-                        )
-                        FilterChip(
-                            selected = bookmatchTop,
-                            onClick = { bookmatchTop = !bookmatchTop },
-                            label = { Text("بالا", fontSize = 11.sp) }
-                        )
-                        FilterChip(
-                            selected = bookmatchRight,
-                            onClick = { bookmatchRight = !bookmatchRight },
-                            label = { Text("راست", fontSize = 11.sp) }
-                        )
-                        FilterChip(
-                            selected = bookmatchBottom,
-                            onClick = { bookmatchBottom = !bookmatchBottom },
-                            label = { Text("پایین", fontSize = 11.sp) }
-                        )
-                    }
 
-                    Spacer(modifier = Modifier.height(16.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -1228,7 +1238,6 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
                                 val l = lStr.toFloatOrNullWithPersian()
                                 val w = wStr.toFloatOrNullWithPersian()
                                 if (name.isNotEmpty() && l != null && w != null) {
-                                    val isAnyBookmatchSelected = bookmatchLeft || bookmatchTop || bookmatchRight || bookmatchBottom
                                     if (editingPart == null) {
                                         viewModel.addPart(
                                             name = name,
@@ -1240,11 +1249,11 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
                                             miterTop = miterTop,
                                             miterRight = miterRight,
                                             miterBottom = miterBottom,
-                                            isBookmatch = isAnyBookmatchSelected,
-                                            bookmatchLeft = bookmatchLeft,
-                                            bookmatchTop = bookmatchTop,
-                                            bookmatchRight = bookmatchRight,
-                                            bookmatchBottom = bookmatchBottom
+                                            isBookmatch = isBookmatch,
+                                            bookmatchLeft = false,
+                                            bookmatchTop = false,
+                                            bookmatchRight = false,
+                                            bookmatchBottom = false
                                         )
                                     } else {
                                         viewModel.updatePart(
@@ -1258,11 +1267,11 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
                                                 miterTop = miterTop,
                                                 miterRight = miterRight,
                                                 miterBottom = miterBottom,
-                                                isBookmatch = isAnyBookmatchSelected,
-                                                bookmatchLeft = bookmatchLeft,
-                                                bookmatchTop = bookmatchTop,
-                                                bookmatchRight = bookmatchRight,
-                                                bookmatchBottom = bookmatchBottom
+                                                isBookmatch = isBookmatch,
+                                                bookmatchLeft = false,
+                                                bookmatchTop = false,
+                                                bookmatchRight = false,
+                                                bookmatchBottom = false
                                             )
                                         )
                                         editingPart = null
@@ -1277,10 +1286,7 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
                                         miterTop = false
                                         miterRight = false
                                         miterBottom = false
-                                        bookmatchLeft = false
-                                        bookmatchTop = false
-                                        bookmatchRight = false
-                                        bookmatchBottom = false
+                                        isBookmatch = false
                                     }
                                 }
                             },
@@ -1417,21 +1423,7 @@ fun PartRowItem(part: Part, onDelete: () -> Unit, onEdit: () -> Unit) {
                             )
                         }
 
-                        val bmSides = mutableListOf<String>()
-                        if (part.bookmatchLeft) bmSides.add("چپ")
-                        if (part.bookmatchTop) bmSides.add("بالا")
-                        if (part.bookmatchRight) bmSides.add("راست")
-                        if (part.bookmatchBottom) bmSides.add("پایین")
-                        if (bmSides.isNotEmpty()) {
-                            SuggestionChip(
-                                onClick = {},
-                                label = { Text("بوک‌مچ: ${bmSides.joinToString("، ")}", fontSize = 10.sp) },
-                                modifier = Modifier.scale(0.85f),
-                                colors = SuggestionChipDefaults.suggestionChipColors(
-                                    containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
-                                )
-                            )
-                        }
+
 
                         val miters = mutableListOf<String>()
                         if (part.miterLeft) miters.add("چپ")
@@ -1788,8 +1780,8 @@ fun StoneLayoutCanvas(layout: SlabLayout, diskThickness: Float, trimMargin: Floa
             val miterHatchColor = Color.Black // Black hatching for miter as requested
 
             if (drawMiterLeft) {
-                val hatchSize = 8.dp.toPx()
-                val step = 12.dp.toPx()
+                val hatchSize = 3.dp.toPx()
+                val step = 6.dp.toPx()
                 var currY = py
                 while (currY < py + ph) {
                     val nextY = minOf(currY + hatchSize, py + ph)
@@ -1798,7 +1790,7 @@ fun StoneLayoutCanvas(layout: SlabLayout, diskThickness: Float, trimMargin: Floa
                         color = miterHatchColor,
                         start = Offset(px, currY),
                         end = Offset(nextX, nextY),
-                        strokeWidth = 2.dp.toPx()
+                        strokeWidth = 0.8.dp.toPx()
                     )
                     currY += step
                 }
@@ -1806,13 +1798,13 @@ fun StoneLayoutCanvas(layout: SlabLayout, diskThickness: Float, trimMargin: Floa
                     color = miterHatchColor,
                     start = Offset(px, py),
                     end = Offset(px, py + ph),
-                    strokeWidth = 3.dp.toPx()
+                    strokeWidth = 1.2.dp.toPx()
                 )
             }
 
             if (drawMiterRight) {
-                val hatchSize = 8.dp.toPx()
-                val step = 12.dp.toPx()
+                val hatchSize = 3.dp.toPx()
+                val step = 6.dp.toPx()
                 var currY = py
                 while (currY < py + ph) {
                     val nextY = minOf(currY + hatchSize, py + ph)
@@ -1821,7 +1813,7 @@ fun StoneLayoutCanvas(layout: SlabLayout, diskThickness: Float, trimMargin: Floa
                         color = miterHatchColor,
                         start = Offset(px + pw, currY),
                         end = Offset(nextX, nextY),
-                        strokeWidth = 2.dp.toPx()
+                        strokeWidth = 0.8.dp.toPx()
                     )
                     currY += step
                 }
@@ -1829,13 +1821,13 @@ fun StoneLayoutCanvas(layout: SlabLayout, diskThickness: Float, trimMargin: Floa
                     color = miterHatchColor,
                     start = Offset(px + pw, py),
                     end = Offset(px + pw, py + ph),
-                    strokeWidth = 3.dp.toPx()
+                    strokeWidth = 1.2.dp.toPx()
                 )
             }
 
             if (drawMiterTop) {
-                val hatchSize = 8.dp.toPx()
-                val step = 12.dp.toPx()
+                val hatchSize = 3.dp.toPx()
+                val step = 6.dp.toPx()
                 var currX = px
                 while (currX < px + pw) {
                     val nextX = minOf(currX + hatchSize, px + pw)
@@ -1844,7 +1836,7 @@ fun StoneLayoutCanvas(layout: SlabLayout, diskThickness: Float, trimMargin: Floa
                         color = miterHatchColor,
                         start = Offset(currX, py),
                         end = Offset(nextX, nextY),
-                        strokeWidth = 2.dp.toPx()
+                        strokeWidth = 0.8.dp.toPx()
                     )
                     currX += step
                 }
@@ -1852,13 +1844,13 @@ fun StoneLayoutCanvas(layout: SlabLayout, diskThickness: Float, trimMargin: Floa
                     color = miterHatchColor,
                     start = Offset(px, py),
                     end = Offset(px + pw, py),
-                    strokeWidth = 3.dp.toPx()
+                    strokeWidth = 1.2.dp.toPx()
                 )
             }
 
             if (drawMiterBottom) {
-                val hatchSize = 8.dp.toPx()
-                val step = 12.dp.toPx()
+                val hatchSize = 3.dp.toPx()
+                val step = 6.dp.toPx()
                 var currX = px
                 while (currX < px + pw) {
                     val nextX = minOf(currX + hatchSize, px + pw)
@@ -1867,7 +1859,7 @@ fun StoneLayoutCanvas(layout: SlabLayout, diskThickness: Float, trimMargin: Floa
                         color = miterHatchColor,
                         start = Offset(currX, py + ph),
                         end = Offset(nextX, nextY),
-                        strokeWidth = 2.dp.toPx()
+                        strokeWidth = 0.8.dp.toPx()
                     )
                     currX += step
                 }
@@ -1875,74 +1867,11 @@ fun StoneLayoutCanvas(layout: SlabLayout, diskThickness: Float, trimMargin: Floa
                     color = miterHatchColor,
                     start = Offset(px, py + ph),
                     end = Offset(px + pw, py + ph),
-                    strokeWidth = 3.dp.toPx()
+                    strokeWidth = 1.2.dp.toPx()
                 )
             }
 
-            // Draw Bookmatch Double Orange Lines if enabled
-            val drawBookmatchLeft = if (part.isRotated) part.part.bookmatchBottom else part.part.bookmatchLeft
-            val drawBookmatchTop = if (part.isRotated) part.part.bookmatchLeft else part.part.bookmatchTop
-            val drawBookmatchRight = if (part.isRotated) part.part.bookmatchTop else part.part.bookmatchRight
-            val drawBookmatchBottom = if (part.isRotated) part.part.bookmatchRight else part.part.bookmatchBottom
 
-            val bmHatchColor = Color(0xFFFF9800) // Beautiful bright orange
-
-            if (drawBookmatchLeft) {
-                drawLine(
-                    color = bmHatchColor,
-                    start = Offset(px + 1.dp.toPx(), py),
-                    end = Offset(px + 1.dp.toPx(), py + ph),
-                    strokeWidth = 2.dp.toPx()
-                )
-                drawLine(
-                    color = bmHatchColor,
-                    start = Offset(px + 4.dp.toPx(), py),
-                    end = Offset(px + 4.dp.toPx(), py + ph),
-                    strokeWidth = 2.dp.toPx()
-                )
-            }
-            if (drawBookmatchRight) {
-                drawLine(
-                    color = bmHatchColor,
-                    start = Offset(px + pw - 1.dp.toPx(), py),
-                    end = Offset(px + pw - 1.dp.toPx(), py + ph),
-                    strokeWidth = 2.dp.toPx()
-                )
-                drawLine(
-                    color = bmHatchColor,
-                    start = Offset(px + pw - 4.dp.toPx(), py),
-                    end = Offset(px + pw - 4.dp.toPx(), py + ph),
-                    strokeWidth = 2.dp.toPx()
-                )
-            }
-            if (drawBookmatchTop) {
-                drawLine(
-                    color = bmHatchColor,
-                    start = Offset(px, py + 1.dp.toPx()),
-                    end = Offset(px + pw, py + 1.dp.toPx()),
-                    strokeWidth = 2.dp.toPx()
-                )
-                drawLine(
-                    color = bmHatchColor,
-                    start = Offset(px, py + 4.dp.toPx()),
-                    end = Offset(px + pw, py + 4.dp.toPx()),
-                    strokeWidth = 2.dp.toPx()
-                )
-            }
-            if (drawBookmatchBottom) {
-                drawLine(
-                    color = bmHatchColor,
-                    start = Offset(px, py + ph - 1.dp.toPx()),
-                    end = Offset(px + pw, py + ph - 1.dp.toPx()),
-                    strokeWidth = 2.dp.toPx()
-                )
-                drawLine(
-                    color = bmHatchColor,
-                    start = Offset(px, py + ph - 4.dp.toPx()),
-                    end = Offset(px + pw, py + ph - 4.dp.toPx()),
-                    strokeWidth = 2.dp.toPx()
-                )
-            }
 
             // Draw text label with high contrast
             val textColorHex = if (isDark) "#80CBC4" else "#0F5A60"
@@ -1978,7 +1907,7 @@ fun StoneLayoutCanvas(layout: SlabLayout, diskThickness: Float, trimMargin: Floa
 
             // Draw badges inside part
             val miterLabel = if (part.part.miterLeft || part.part.miterTop || part.part.miterRight || part.part.miterBottom) "📐" else ""
-            val bmLabel = if (part.part.isBookmatch || part.part.matchAdjacentTo.isNotEmpty()) "🦋" else ""
+            val bmLabel = if (part.part.matchAdjacentTo.isNotEmpty()) "🔗" else ""
             val badgeStr = listOfNotNull(miterLabel.takeIf { it.isNotEmpty() }, bmLabel.takeIf { it.isNotEmpty() }).joinToString(" ")
 
             if (badgeStr.isNotEmpty()) {

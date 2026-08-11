@@ -279,39 +279,68 @@ object StoneCutSolver {
                 var placed = false
 
                 // Try placing in current shelf
-                if (currentX + item.width <= usableL && currentY + item.height <= usableW) {
-                    packedInSlab.addAll(item.toPlacedParts(trimMargin + currentX, trimMargin + currentY, containerId, false))
+                val canPlaceStd = (currentX + item.width <= usableL && currentY + item.height <= usableW)
+                val canPlaceRot = (item.allowRotation && currentX + item.rotatedWidth <= usableL && currentY + item.rotatedHeight <= usableW)
+
+                if (canPlaceStd && canPlaceRot) {
+                    // Both fit! Choose the orientation that minimizes height (making shelf more compact)
+                    if (item.rotatedHeight < item.height) {
+                        packedInSlab.addAll(item.toPlacedParts(trimMargin + currentX, trimMargin + currentY, containerId, true, diskThickness))
+                        currentX += item.rotatedWidth + diskThickness
+                        currentShelfHeight = max(currentShelfHeight, item.rotatedHeight)
+                    } else {
+                        packedInSlab.addAll(item.toPlacedParts(trimMargin + currentX, trimMargin + currentY, containerId, false, diskThickness))
+                        currentX += item.width + diskThickness
+                        currentShelfHeight = max(currentShelfHeight, item.height)
+                    }
+                    placed = true
+                } else if (canPlaceStd) {
+                    packedInSlab.addAll(item.toPlacedParts(trimMargin + currentX, trimMargin + currentY, containerId, false, diskThickness))
                     currentX += item.width + diskThickness
                     currentShelfHeight = max(currentShelfHeight, item.height)
                     placed = true
-                }
-
-                // If independent part, try with rotation
-                if (!placed && item.isSinglePart && item.parts.first().allowRotation) {
-                    if (currentX + item.height <= usableL && currentY + item.width <= usableW) {
-                        packedInSlab.addAll(item.toPlacedParts(trimMargin + currentX, trimMargin + currentY, containerId, true))
-                        currentX += item.height + diskThickness
-                        currentShelfHeight = max(currentShelfHeight, item.width)
-                        placed = true
-                    }
+                } else if (canPlaceRot) {
+                    packedInSlab.addAll(item.toPlacedParts(trimMargin + currentX, trimMargin + currentY, containerId, true, diskThickness))
+                    currentX += item.rotatedWidth + diskThickness
+                    currentShelfHeight = max(currentShelfHeight, item.rotatedHeight)
+                    placed = true
                 }
 
                 // Try new shelf
                 if (!placed) {
                     val nextY = currentY + currentShelfHeight + diskThickness
-                    if (currentX > 0f && nextY + item.height <= usableW && item.width <= usableL) {
+                    val canPlaceStdNew = (currentX > 0f && nextY + item.height <= usableW && item.width <= usableL)
+                    val canPlaceRotNew = (currentX > 0f && item.allowRotation && nextY + item.rotatedHeight <= usableW && item.rotatedWidth <= usableL)
+
+                    if (canPlaceStdNew && canPlaceRotNew) {
+                        // Both fit in new shelf! Choose the one with smaller height
+                        if (item.rotatedHeight < item.height) {
+                            currentX = 0f
+                            currentY = nextY
+                            currentShelfHeight = item.rotatedHeight
+                            packedInSlab.addAll(item.toPlacedParts(trimMargin + currentX, trimMargin + currentY, containerId, true, diskThickness))
+                            currentX += item.rotatedWidth + diskThickness
+                        } else {
+                            currentX = 0f
+                            currentY = nextY
+                            currentShelfHeight = item.height
+                            packedInSlab.addAll(item.toPlacedParts(trimMargin + currentX, trimMargin + currentY, containerId, false, diskThickness))
+                            currentX += item.width + diskThickness
+                        }
+                        placed = true
+                    } else if (canPlaceStdNew) {
                         currentX = 0f
                         currentY = nextY
                         currentShelfHeight = item.height
-                        packedInSlab.addAll(item.toPlacedParts(trimMargin + currentX, trimMargin + currentY, containerId, false))
+                        packedInSlab.addAll(item.toPlacedParts(trimMargin + currentX, trimMargin + currentY, containerId, false, diskThickness))
                         currentX += item.width + diskThickness
                         placed = true
-                    } else if (currentX > 0f && item.isSinglePart && item.parts.first().allowRotation && nextY + item.width <= usableW && item.height <= usableL) {
+                    } else if (canPlaceRotNew) {
                         currentX = 0f
                         currentY = nextY
-                        currentShelfHeight = item.width
-                        packedInSlab.addAll(item.toPlacedParts(trimMargin + currentX, trimMargin + currentY, containerId, true))
-                        currentX += item.height + diskThickness
+                        currentShelfHeight = item.rotatedHeight
+                        packedInSlab.addAll(item.toPlacedParts(trimMargin + currentX, trimMargin + currentY, containerId, true, diskThickness))
+                        currentX += item.rotatedWidth + diskThickness
                         placed = true
                     }
                 }
@@ -568,18 +597,7 @@ object StoneCutSolver {
                     desc.append(" *هشدار تطابق رگه: این قطعه متصل به قطعه ${part.part.matchAdjacentTo} است تا رگه‌های طبیعی حفظ شود.*")
                 }
 
-                if (part.part.isBookmatch) {
-                    val bmSides = mutableListOf<String>()
-                    if (part.part.bookmatchLeft) bmSides.add("چپ")
-                    if (part.part.bookmatchTop) bmSides.add("بالا")
-                    if (part.part.bookmatchRight) bmSides.add("راست")
-                    if (part.part.bookmatchBottom) bmSides.add("پایین")
-                    if (bmSides.isNotEmpty()) {
-                        desc.append(" [طرح قرینه بوک‌مچ در لبه‌های: ${bmSides.joinToString("، ")}]")
-                    } else {
-                        desc.append(" [طرح قرینه بوک‌مچ]")
-                    }
-                }
+
 
                 val miters = mutableListOf<String>()
                 if (part.part.miterLeft) miters.add("چپ")
@@ -657,15 +675,46 @@ object StoneCutSolver {
         val width: Float,
         val height: Float,
         val isSinglePart: Boolean,
-        val isVerticalChain: Boolean = false
+        val isVerticalChain: Boolean = false,
+        val diskThickness: Float = 0f
     ) {
+        val allowRotation: Boolean
+            get() = if (isSinglePart) parts.first().allowRotation else (parts.isNotEmpty() && parts.all { it.allowRotation })
+
+        val rotatedWidth: Float
+            get() {
+                return if (isSinglePart) {
+                    height
+                } else {
+                    if (isVerticalChain) {
+                        parts.sumOf { it.width.toDouble() }.toFloat() + (parts.size - 1) * diskThickness
+                    } else {
+                        parts.maxOf { it.width }
+                    }
+                }
+            }
+
+        val rotatedHeight: Float
+            get() {
+                return if (isSinglePart) {
+                    width
+                } else {
+                    if (isVerticalChain) {
+                        parts.maxOf { it.length }
+                    } else {
+                        parts.sumOf { it.length.toDouble() }.toFloat() + (parts.size - 1) * diskThickness
+                    }
+                }
+            }
+
         companion object {
             fun fromPart(part: Part): PackableItem {
                 return PackableItem(
                     parts = listOf(part),
                     width = part.length,
                     height = part.width,
-                    isSinglePart = true
+                    isSinglePart = true,
+                    diskThickness = 0f
                 )
             }
 
@@ -698,7 +747,8 @@ object StoneCutSolver {
                         width = maxWidthV,
                         height = totalHeightV,
                         isSinglePart = false,
-                        isVerticalChain = true
+                        isVerticalChain = true,
+                        diskThickness = diskThickness
                     )
                 } else {
                     PackableItem(
@@ -706,17 +756,18 @@ object StoneCutSolver {
                         width = totalWidthH,
                         height = maxHeightH,
                         isSinglePart = false,
-                        isVerticalChain = false
+                        isVerticalChain = false,
+                        diskThickness = diskThickness
                     )
                 }
             }
         }
 
-        fun toPlacedParts(startX: Float, startY: Float, containerId: String, rotateSingle: Boolean): List<PlacedPart> {
+        fun toPlacedParts(startX: Float, startY: Float, containerId: String, rotate: Boolean, diskThickness: Float): List<PlacedPart> {
             val list = mutableListOf<PlacedPart>()
             if (isSinglePart) {
                 val part = parts.first()
-                if (rotateSingle) {
+                if (rotate) {
                     list.add(
                         PlacedPart(
                             part = part,
@@ -742,46 +793,72 @@ object StoneCutSolver {
                     )
                 }
             } else if (isVerticalChain) {
-                var currentY = startY
-                val totalWidthSum = parts.sumOf { it.width.toDouble() }.toFloat()
-                val gap = if (parts.size > 1) {
-                    (height - totalWidthSum) / (parts.size - 1)
-                } else 0f
-
-                for (part in parts) {
-                    list.add(
-                        PlacedPart(
-                            part = part,
-                            x = startX,
-                            y = currentY,
-                            width = part.length,
-                            height = part.width,
-                            isRotated = false,
-                            containerId = containerId
+                if (!rotate) {
+                    var currentY = startY
+                    for (part in parts) {
+                        list.add(
+                            PlacedPart(
+                                part = part,
+                                x = startX,
+                                y = currentY,
+                                width = part.length,
+                                height = part.width,
+                                isRotated = false,
+                                containerId = containerId
+                            )
                         )
-                    )
-                    currentY += part.width + gap
+                        currentY += part.width + diskThickness
+                    }
+                } else {
+                    var currentX = startX
+                    for (part in parts) {
+                        list.add(
+                            PlacedPart(
+                                part = part,
+                                x = currentX,
+                                y = startY,
+                                width = part.width,
+                                height = part.length,
+                                isRotated = true,
+                                containerId = containerId
+                            )
+                        )
+                        currentX += part.width + diskThickness
+                    }
                 }
             } else {
-                var currentX = startX
-                val totalLengthSum = parts.sumOf { it.length.toDouble() }.toFloat()
-                val gap = if (parts.size > 1) {
-                    (width - totalLengthSum) / (parts.size - 1)
-                } else 0f
-
-                for (part in parts) {
-                    list.add(
-                        PlacedPart(
-                            part = part,
-                            x = currentX,
-                            y = startY,
-                            width = part.length,
-                            height = part.width,
-                            isRotated = false,
-                            containerId = containerId
+                if (!rotate) {
+                    var currentX = startX
+                    for (part in parts) {
+                        list.add(
+                            PlacedPart(
+                                part = part,
+                                x = currentX,
+                                y = startY,
+                                width = part.length,
+                                height = part.width,
+                                isRotated = false,
+                                containerId = containerId
+                            )
                         )
-                    )
-                    currentX += part.length + gap
+                        currentX += part.length + diskThickness
+                    }
+                } else {
+                    var currentY = startY
+                    for (part in parts) {
+                        list.add(
+                            PlacedPart(
+                                part = part,
+                                x = startX,
+                                y = currentY,
+                                width = part.width,
+                                height = part.length,
+                                isRotated = true,
+                                containerId = containerId
+                            )
+                        )
+                        currentY += part.length + diskThickness
+                    }
                 }
             }
             return list
