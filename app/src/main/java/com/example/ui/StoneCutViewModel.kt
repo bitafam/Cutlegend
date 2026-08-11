@@ -81,6 +81,9 @@ class StoneCutViewModel(application: Application) : AndroidViewModel(application
     private val _optimizationResult = MutableStateFlow<OptimizationResult?>(null)
     val optimizationResult: StateFlow<OptimizationResult?> = _optimizationResult.asStateFlow()
 
+    private val _customSlabLayouts = MutableStateFlow<List<SlabLayout>?>(null)
+    val customSlabLayouts: StateFlow<List<SlabLayout>?> = _customSlabLayouts.asStateFlow()
+
     init {
         // Run initial optimization on start
         triggerOptimization()
@@ -96,6 +99,108 @@ class StoneCutViewModel(application: Application) : AndroidViewModel(application
             diskThickness = _diskThickness.value,
             trimMargin = _trimMargin.value
         )
+        // Reset manual custom layout when inputs or auto-layouts change
+        _customSlabLayouts.value = null
+    }
+
+    fun startManualEdit() {
+        if (_customSlabLayouts.value == null) {
+            _customSlabLayouts.value = _optimizationResult.value?.slabLayouts
+        }
+    }
+
+    fun resetToAuto() {
+        _customSlabLayouts.value = null
+    }
+
+    fun rotatePlacedPart(containerId: String, partId: String) {
+        startManualEdit()
+        val currentList = _customSlabLayouts.value ?: return
+        val updatedList = currentList.map { slab ->
+            if (slab.containerId == containerId) {
+                val updatedParts = slab.placedParts.map { placed ->
+                    if (placed.part.id == partId) {
+                        placed.copy(
+                            width = placed.height,
+                            height = placed.width,
+                            isRotated = !placed.isRotated
+                        )
+                    } else {
+                        placed
+                    }
+                }
+                slab.copy(placedParts = updatedParts)
+            } else {
+                slab
+            }
+        }
+        _customSlabLayouts.value = updatedList
+        recalculateEfficiencies()
+    }
+
+    fun movePlacedPart(containerId: String, partId: String, dx: Float, dy: Float) {
+        startManualEdit()
+        val currentList = _customSlabLayouts.value ?: return
+        val updatedList = currentList.map { slab ->
+            if (slab.containerId == containerId) {
+                val updatedParts = slab.placedParts.map { placed ->
+                    if (placed.part.id == partId) {
+                        placed.copy(
+                            x = (placed.x + dx).coerceIn(0f, slab.originalLength),
+                            y = (placed.y + dy).coerceIn(0f, slab.originalWidth)
+                        )
+                    } else {
+                        placed
+                    }
+                }
+                slab.copy(placedParts = updatedParts)
+            } else {
+                slab
+            }
+        }
+        _customSlabLayouts.value = updatedList
+        recalculateEfficiencies()
+    }
+
+    fun changePartSlab(partId: String, fromContainerId: String, toContainerId: String) {
+        startManualEdit()
+        val currentList = _customSlabLayouts.value ?: return
+        var partToMove: PlacedPart? = null
+        currentList.find { it.containerId == fromContainerId }?.placedParts?.find { it.part.id == partId }?.let {
+            partToMove = it
+        }
+
+        if (partToMove == null) return
+
+        val updatedList = currentList.map { slab ->
+            when (slab.containerId) {
+                fromContainerId -> {
+                    slab.copy(placedParts = slab.placedParts.filter { it.part.id != partId })
+                }
+                toContainerId -> {
+                    val moved = partToMove!!.copy(
+                        containerId = toContainerId,
+                        x = slab.trimMargin,
+                        y = slab.trimMargin
+                    )
+                    slab.copy(placedParts = slab.placedParts + moved)
+                }
+                else -> slab
+            }
+        }
+        _customSlabLayouts.value = updatedList
+        recalculateEfficiencies()
+    }
+
+    private fun recalculateEfficiencies() {
+        val currentList = _customSlabLayouts.value ?: return
+        val updatedList = currentList.map { slab ->
+            val totalPartArea = slab.placedParts.sumOf { (it.width * it.height).toDouble() }.toFloat()
+            val totalContainerArea = slab.originalLength * slab.originalWidth
+            val efficiency = if (totalContainerArea > 0) (totalPartArea / totalContainerArea) * 100f else 0f
+            slab.copy(efficiency = efficiency)
+        }
+        _customSlabLayouts.value = updatedList
     }
 
     fun updateStandardSlab(length: Float, width: Float, thickness: Float) {
@@ -140,7 +245,8 @@ class StoneCutViewModel(application: Application) : AndroidViewModel(application
         bookmatchLeft: Boolean = false,
         bookmatchTop: Boolean = false,
         bookmatchRight: Boolean = false,
-        bookmatchBottom: Boolean = false
+        bookmatchBottom: Boolean = false,
+        quantity: Int = 1
     ) {
         val nextId = getNextLatinId()
         val newPart = Part(
@@ -158,7 +264,8 @@ class StoneCutViewModel(application: Application) : AndroidViewModel(application
             bookmatchLeft = bookmatchLeft,
             bookmatchTop = bookmatchTop,
             bookmatchRight = bookmatchRight,
-            bookmatchBottom = bookmatchBottom
+            bookmatchBottom = bookmatchBottom,
+            quantity = quantity
         )
         _parts.value = _parts.value + newPart
         triggerOptimization()
@@ -399,10 +506,18 @@ class StoneCutViewModel(application: Application) : AndroidViewModel(application
                 currentY += 20f
                 drawRtlText(canvas, "ضخامت دیسک اره (Kerf): ${_diskThickness.value} میلی‌متر // مقدار حاشیه هرس اسلب: ${_trimMargin.value} میلی‌متر", pageWidth - 40f, currentY, textPaint)
 
+                val customLayouts = _customSlabLayouts.value
                 val result = _optimizationResult.value
-                val efficiencyStr = if (result != null) String.format(Locale.US, "%.1f%%", result.totalYieldPercentage) else "---"
-                val slabsUsedCount = result?.slabLayouts?.filter { !it.isScrap }?.size ?: 0
-                val scrapsUsedCount = result?.slabLayouts?.filter { it.isScrap }?.size ?: 0
+                val finalLayouts = customLayouts ?: result?.slabLayouts ?: emptyList()
+
+                val totalPartArea = finalLayouts.sumOf { slab -> slab.placedParts.sumOf { (it.width * it.height).toDouble() } }.toFloat()
+                val slabsUsedCount = finalLayouts.filter { !it.isScrap }.size
+                val scrapsUsedCount = finalLayouts.filter { it.isScrap }.size
+                val totalContainerArea = (slabsUsedCount * _standardSlab.value.length * _standardSlab.value.width) +
+                        finalLayouts.filter { it.isScrap }.sumOf { (it.originalLength * it.originalWidth).toDouble() }.toFloat()
+                val calculatedYield = if (totalContainerArea > 0) (totalPartArea / totalContainerArea) * 100f else 0f
+
+                val efficiencyStr = String.format(Locale.US, "%.1f%%", calculatedYield)
 
                 currentY += 20f
                 drawRtlText(canvas, "بازدهی کل طرح: $efficiencyStr // تعداد کل قطعات برش: ${_parts.value.size} مورد", pageWidth - 40f, currentY, textPaint)
@@ -502,7 +617,7 @@ class StoneCutViewModel(application: Application) : AndroidViewModel(application
                 pdfDocument.finishPage(page)
 
                 // Page 2+: Layout maps for each raw plate / slab
-                result?.slabLayouts?.forEachIndexed { layoutIdx, layout ->
+                finalLayouts.forEachIndexed { layoutIdx, layout ->
                     pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNumber++).create()
                     page = pdfDocument.startPage(pageInfo)
                     canvas = page.canvas
@@ -1002,7 +1117,10 @@ class StoneCutViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch(Dispatchers.Default) {
             try {
                 val result = _optimizationResult.value
-                if (result == null || result.slabLayouts.isEmpty()) {
+                val customLayouts = _customSlabLayouts.value
+                val finalLayouts = customLayouts ?: result?.slabLayouts ?: emptyList()
+
+                if (finalLayouts.isEmpty()) {
                     throw Exception("طرح بهینه‌سازی وجود ندارد. ابتدا دکمه محاسبه چیدمان را بزنید.")
                 }
 
@@ -1012,7 +1130,7 @@ class StoneCutViewModel(application: Application) : AndroidViewModel(application
                 var layoutOffsetOffset = 0f
                 val spacingBetweenSlabs = 1000f
 
-                result.slabLayouts.forEachIndexed { idx, layout ->
+                finalLayouts.forEachIndexed { idx, layout ->
                     val ox = layoutOffsetOffset
                     val oy = 0f
                     val L = layout.originalLength

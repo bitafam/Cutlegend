@@ -25,9 +25,24 @@ object StoneCutSolver {
             )
         }
 
+        // Expand parts by quantity
+        val expandedParts = mutableListOf<Part>()
+        for (part in parts) {
+            val qty = if (part.quantity < 1) 1 else part.quantity
+            for (i in 1..qty) {
+                val suffix = if (qty > 1) "_$i" else ""
+                expandedParts.add(
+                    part.copy(
+                        id = "${part.id}$suffix",
+                        matchAdjacentTo = if (part.matchAdjacentTo.isNotEmpty() && qty > 1) "${part.matchAdjacentTo}$suffix" else part.matchAdjacentTo
+                    )
+                )
+            }
+        }
+
         // 1. Graph Construction: Group parts into chains and independent parts
-        val chains = buildChains(parts)
-        val independentParts = parts.filter { part ->
+        val chains = buildChains(expandedParts)
+        val independentParts = expandedParts.filter { part ->
             val chain = chains.find { it.contains(part) }
             chain == null || chain.size == 1
         }
@@ -216,7 +231,7 @@ object StoneCutSolver {
         finalSlabLayouts.addAll(bestLayouts)
 
         // Compute overall statistics
-        val totalPartArea = parts.sumOf { (it.length * it.width).toDouble() }.toFloat()
+        val totalPartArea = expandedParts.sumOf { (it.length * it.width).toDouble() }.toFloat()
         val standardSlabsUsed = finalSlabLayouts.count { !it.isScrap }
         val scrapsUsedCount = usedScraps.size
 
@@ -679,33 +694,13 @@ object StoneCutSolver {
         val diskThickness: Float = 0f
     ) {
         val allowRotation: Boolean
-            get() = if (isSinglePart) parts.first().allowRotation else (parts.isNotEmpty() && parts.all { it.allowRotation })
+            get() = if (isSinglePart) parts.first().allowRotation else false
 
         val rotatedWidth: Float
-            get() {
-                return if (isSinglePart) {
-                    height
-                } else {
-                    if (isVerticalChain) {
-                        parts.sumOf { it.width.toDouble() }.toFloat() + (parts.size - 1) * diskThickness
-                    } else {
-                        parts.maxOf { it.width }
-                    }
-                }
-            }
+            get() = if (isSinglePart) height else width
 
         val rotatedHeight: Float
-            get() {
-                return if (isSinglePart) {
-                    width
-                } else {
-                    if (isVerticalChain) {
-                        parts.maxOf { it.length }
-                    } else {
-                        parts.sumOf { it.length.toDouble() }.toFloat() + (parts.size - 1) * diskThickness
-                    }
-                }
-            }
+            get() = if (isSinglePart) width else height
 
         companion object {
             fun fromPart(part: Part): PackableItem {
@@ -719,47 +714,17 @@ object StoneCutSolver {
             }
 
             fun fromChain(chain: List<Part>, diskThickness: Float, usableL: Float, usableW: Float): PackableItem {
-                val first = chain.firstOrNull()
-                val isAllWidthsEqual = chain.all { it.width == first?.width }
-                val isAllLengthsEqual = chain.all { it.length == first?.length }
-
                 val totalWidthH = chain.sumOf { it.length.toDouble() }.toFloat() + (chain.size - 1) * diskThickness
                 val maxHeightH = chain.maxOf { it.width }
 
-                val maxWidthV = chain.maxOf { it.length }
-                val totalHeightV = chain.sumOf { it.width.toDouble() }.toFloat() + (chain.size - 1) * diskThickness
-
-                // Fits in standard or transposed orientation
-                val fitsHorizontally = (totalWidthH <= usableL && maxHeightH <= usableW) || (totalWidthH <= usableW && maxHeightH <= usableL)
-                val fitsVertically = (maxWidthV <= usableL && totalHeightV <= usableW) || (maxWidthV <= usableW && totalHeightV <= usableL)
-
-                val stackVertically = when {
-                    fitsVertically && !fitsHorizontally -> true
-                    fitsHorizontally && !fitsVertically -> false
-                    isAllLengthsEqual -> true
-                    isAllWidthsEqual -> false
-                    else -> false
-                }
-
-                return if (stackVertically) {
-                    PackableItem(
-                        parts = chain,
-                        width = maxWidthV,
-                        height = totalHeightV,
-                        isSinglePart = false,
-                        isVerticalChain = true,
-                        diskThickness = diskThickness
-                    )
-                } else {
-                    PackableItem(
-                        parts = chain,
-                        width = totalWidthH,
-                        height = maxHeightH,
-                        isSinglePart = false,
-                        isVerticalChain = false,
-                        diskThickness = diskThickness
-                    )
-                }
+                return PackableItem(
+                    parts = chain,
+                    width = totalWidthH,
+                    height = maxHeightH,
+                    isSinglePart = false,
+                    isVerticalChain = false,
+                    diskThickness = diskThickness
+                )
             }
         }
 

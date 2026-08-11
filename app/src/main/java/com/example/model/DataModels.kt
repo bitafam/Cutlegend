@@ -29,7 +29,8 @@ data class Part(
     val bookmatchLeft: Boolean = false,
     val bookmatchTop: Boolean = false,
     val bookmatchRight: Boolean = false,
-    val bookmatchBottom: Boolean = false
+    val bookmatchBottom: Boolean = false,
+    val quantity: Int = 1
 )
 
 data class PlacedPart(

@@ -1056,6 +1056,7 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
     var miterBottom by remember { mutableStateOf(false) }
 
     var isBookmatch by remember { mutableStateOf(false) }
+    var quantity by remember { mutableStateOf(1) }
 
     var editingPart by remember { mutableStateOf<Part?>(null) }
     var expandedDropdown by remember { mutableStateOf(false) }
@@ -1072,6 +1073,7 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
             miterRight = editingPart!!.miterRight
             miterBottom = editingPart!!.miterBottom
             isBookmatch = editingPart!!.isBookmatch
+            quantity = editingPart!!.quantity
         } else {
             name = ""
             lStr = ""
@@ -1083,6 +1085,7 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
             miterRight = false
             miterBottom = false
             isBookmatch = false
+            quantity = 1
         }
     }
 
@@ -1219,7 +1222,53 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
 
                     Spacer(modifier = Modifier.height(12.dp))
 
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("تعداد قطعه مشابه:", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            IconButton(
+                                onClick = { if (quantity > 1) quantity-- },
+                                modifier = Modifier
+                                    .background(MaterialTheme.colorScheme.secondaryContainer, CircleShape)
+                                    .size(36.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Remove,
+                                    contentDescription = "کاهش",
+                                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                            Text(
+                                text = "$quantity",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.widthIn(min = 24.dp),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                            IconButton(
+                                onClick = { quantity++ },
+                                modifier = Modifier
+                                    .background(MaterialTheme.colorScheme.secondaryContainer, CircleShape)
+                                    .size(36.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Add,
+                                    contentDescription = "افزایش",
+                                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
 
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -1253,7 +1302,8 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
                                             bookmatchLeft = false,
                                             bookmatchTop = false,
                                             bookmatchRight = false,
-                                            bookmatchBottom = false
+                                            bookmatchBottom = false,
+                                            quantity = quantity
                                         )
                                     } else {
                                         viewModel.updatePart(
@@ -1271,7 +1321,8 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
                                                 bookmatchLeft = false,
                                                 bookmatchTop = false,
                                                 bookmatchRight = false,
-                                                bookmatchBottom = false
+                                                bookmatchBottom = false,
+                                                quantity = quantity
                                             )
                                         )
                                         editingPart = null
@@ -1287,6 +1338,7 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
                                         miterRight = false
                                         miterBottom = false
                                         isBookmatch = false
+                                        quantity = 1
                                     }
                                 }
                             },
@@ -1378,7 +1430,16 @@ fun PartRowItem(part: Part, onDelete: () -> Unit, onEdit: () -> Unit) {
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
-                    Text(text = part.name, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(text = part.name, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Badge(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        ) {
+                            Text(" ${part.quantity} عدد ", modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
                     Text(
                         text = "${part.width.toInt()} × ${part.length.toInt()} میلی‌متر (مساحت: ${(part.width * part.length / 1000000).format(2)} مترمربع)",
                         style = MaterialTheme.typography.bodySmall,
@@ -1468,14 +1529,17 @@ fun PartRowItem(part: Part, onDelete: () -> Unit, onEdit: () -> Unit) {
 
 @Composable
 fun VisualMapTab(viewModel: StoneCutViewModel, result: OptimizationResult?, diskThickness: Float, trimMargin: Float) {
-    if (result == null || result.slabLayouts.isEmpty()) {
+    val customSlabLayouts by viewModel.customSlabLayouts.collectAsState()
+    val layoutsToRender = customSlabLayouts ?: result?.slabLayouts ?: emptyList()
+
+    if (layoutsToRender.isEmpty()) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(24.dp),
             contentAlignment = Alignment.Center
         ) {
-            Column(horizontalAlignment = Alignment.CenterAlignment) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Icon(Icons.Default.Map, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.primary)
                 Spacer(modifier = Modifier.height(16.dp))
                 Text("نقشه‌ای وجود ندارد. لطفاً ابتدا قطعاتی را به لیست برش اضافه کنید.", textAlign = TextAlign.Center)
@@ -1483,6 +1547,8 @@ fun VisualMapTab(viewModel: StoneCutViewModel, result: OptimizationResult?, disk
         }
         return
     }
+
+    val allLayoutIds = layoutsToRender.map { it.containerId }
 
     LazyColumn(
         modifier = Modifier
@@ -1498,14 +1564,55 @@ fun VisualMapTab(viewModel: StoneCutViewModel, result: OptimizationResult?, disk
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                text = "هر اسلب در زیر با قطعات قرارگرفته، خطوط دقیق برش و جهت رگه‌های طبیعی سنگ ترسیم شده است.",
+                text = "هر اسلب در زیر با قطعات قرارگرفته، خطوط دقیق برش و جهت رگه‌های طبیعی سنگ ترسیم شده است. شما می‌توانید جهت و موقعیت هر قطعه را به صورت دستی تغییر دهید.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
-        items(result.slabLayouts) { layout ->
-            SlabLayoutCard(layout = layout, diskThickness = diskThickness, trimMargin = trimMargin)
+        if (customSlabLayouts != null) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f),
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.3f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                            Text("✍️", fontSize = 20.sp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "تغییرات دستی فعال است. محاسبات بازدهی مجدداً انجام شد.",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        TextButton(
+                            onClick = { viewModel.resetToAuto() }
+                        ) {
+                            Text("حذف تغییرات دستی", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                }
+            }
+        }
+
+        items(layoutsToRender) { layout ->
+            SlabLayoutCard(
+                layout = layout,
+                diskThickness = diskThickness,
+                trimMargin = trimMargin,
+                viewModel = viewModel,
+                allLayoutIds = allLayoutIds
+            )
         }
 
         item { Spacer(modifier = Modifier.height(16.dp)) }
@@ -1513,7 +1620,13 @@ fun VisualMapTab(viewModel: StoneCutViewModel, result: OptimizationResult?, disk
 }
 
 @Composable
-fun SlabLayoutCard(layout: SlabLayout, diskThickness: Float, trimMargin: Float) {
+fun SlabLayoutCard(
+    layout: SlabLayout,
+    diskThickness: Float,
+    trimMargin: Float,
+    viewModel: StoneCutViewModel,
+    allLayoutIds: List<String>
+) {
     val checkedSteps = remember { mutableStateMapOf<Int, Boolean>() }
 
     val containerLabel = layout.containerId
@@ -1653,6 +1766,192 @@ fun SlabLayoutCard(layout: SlabLayout, diskThickness: Float, trimMargin: Float) 
                         fontSize = 13.sp,
                         color = if (checked) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface
                     )
+                }
+            }
+
+            // COLLAPSIBLE MANUAL ADJUSTMENT PANEL
+            var showManualEditor by remember { mutableStateOf(false) }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showManualEditor = !showManualEditor }
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Build,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.secondary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "ویرایش دستی موقعیت و جهت قطعات",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
+                Icon(
+                    imageVector = if (showManualEditor) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.secondary
+                )
+            }
+
+            if (showManualEditor) {
+                Spacer(modifier = Modifier.height(8.dp))
+                if (layout.placedParts.isEmpty()) {
+                    Text(
+                        text = "هیچ قطعه‌ای در این اسلب وجود ندارد.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                }
+                layout.placedParts.forEach { placed ->
+                    val cleanId = placed.part.id.substringBefore("_")
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "قطعه $cleanId (${placed.part.name})",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp
+                                    )
+                                    Text(
+                                        text = "ابعاد: ${placed.width.toInt()} × ${placed.height.toInt()} م‌م | موقعیت: X=${placed.x.toInt()}، Y=${placed.y.toInt()}",
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+
+                                // Rotate Button
+                                IconButton(
+                                    onClick = { viewModel.rotatePlacedPart(layout.containerId, placed.part.id) },
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .background(MaterialTheme.colorScheme.secondaryContainer, CircleShape)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Refresh,
+                                        contentDescription = "چرخش",
+                                        modifier = Modifier.size(16.dp),
+                                        tint = MaterialTheme.colorScheme.onSecondaryContainer
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Nudge Coordinates buttons
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("جابجایی:", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+
+                                    // Move Left
+                                    IconButton(
+                                        onClick = { viewModel.movePlacedPart(layout.containerId, placed.part.id, -50f, 0f) },
+                                        modifier = Modifier
+                                            .size(28.dp)
+                                            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(4.dp))
+                                    ) {
+                                        Text("◀", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                    // Move Right
+                                    IconButton(
+                                        onClick = { viewModel.movePlacedPart(layout.containerId, placed.part.id, 50f, 0f) },
+                                        modifier = Modifier
+                                            .size(28.dp)
+                                            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(4.dp))
+                                    ) {
+                                        Text("▶", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                    // Move Up
+                                    IconButton(
+                                        onClick = { viewModel.movePlacedPart(layout.containerId, placed.part.id, 0f, -50f) },
+                                        modifier = Modifier
+                                            .size(28.dp)
+                                            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(4.dp))
+                                    ) {
+                                        Text("▲", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                    // Move Down
+                                    IconButton(
+                                        onClick = { viewModel.movePlacedPart(layout.containerId, placed.part.id, 0f, 50f) },
+                                        modifier = Modifier
+                                            .size(28.dp)
+                                            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(4.dp))
+                                    ) {
+                                        Text("▼", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+
+                                // Slab Transfer Dropdown
+                                if (allLayoutIds.size > 1) {
+                                    var showSlabDropdown by remember { mutableStateOf(false) }
+                                    Box {
+                                        Button(
+                                            onClick = { showSlabDropdown = true },
+                                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                            modifier = Modifier.height(28.dp),
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                                contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                                            ),
+                                            shape = RoundedCornerShape(4.dp)
+                                        ) {
+                                            Text("انتقال اسلب", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                        DropdownMenu(
+                                            expanded = showSlabDropdown,
+                                            onDismissRequest = { showSlabDropdown = false }
+                                        ) {
+                                            allLayoutIds.forEach { destId ->
+                                                if (destId != layout.containerId) {
+                                                    val cleanDestId = destId
+                                                        .replace("Slab", "اسلب")
+                                                        .replace("Scrap", "ضایعات")
+                                                    DropdownMenuItem(
+                                                        text = { Text("به $cleanDestId", fontSize = 11.sp) },
+                                                        onClick = {
+                                                            viewModel.changePartSlab(placed.part.id, layout.containerId, destId)
+                                                            showSlabDropdown = false
+                                                        }
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -1891,8 +2190,13 @@ fun StoneLayoutCanvas(layout: SlabLayout, diskThickness: Float, trimMargin: Floa
             }
 
             drawIntoCanvas { canvas ->
+                val partLabel = if (part.part.id.contains("_")) {
+                    "قطعه ${part.part.id.substringBefore("_")} (${part.part.id.substringAfter("_")})"
+                } else {
+                    "قطعه ${part.part.id}"
+                }
                 canvas.nativeCanvas.drawText(
-                    "قطعه ${part.part.id}",
+                    partLabel,
                     px + pw / 2f,
                     py + ph / 2f,
                     textPaint
