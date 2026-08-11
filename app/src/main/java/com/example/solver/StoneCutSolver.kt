@@ -131,6 +131,7 @@ object StoneCutSolver {
 
                     val cutLines = generateCutLines(packedInThisScrap, scrap.length, scrap.width, trimMargin, diskThickness)
                     val instructions = generateInstructions(packedInThisScrap, scrap.length, scrap.width, trimMargin, diskThickness, "Scrap #${scrap.id}")
+                    val offcuts = calculateOffcuts(packedInThisScrap, scrap.length, scrap.width, trimMargin, diskThickness)
 
                     scrapLayouts.add(
                         SlabLayout(
@@ -144,7 +145,8 @@ object StoneCutSolver {
                             wasteSlabScrapArea = wasteSlabScrap,
                             wasteDiskKerfArea = kerfArea,
                             cutLines = cutLines,
-                            instructions = instructions
+                            instructions = instructions,
+                            offcuts = offcuts
                         )
                     )
                 }
@@ -328,6 +330,7 @@ object StoneCutSolver {
 
                 val cutLines = generateCutLines(packedInSlab, actualL, actualW, trimMargin, diskThickness)
                 val instructions = generateInstructions(packedInSlab, actualL, actualW, trimMargin, diskThickness, containerId)
+                val offcuts = calculateOffcuts(packedInSlab, actualL, actualW, trimMargin, diskThickness)
 
                 slabLayouts.add(
                     SlabLayout(
@@ -341,7 +344,8 @@ object StoneCutSolver {
                         wasteSlabScrapArea = wasteSlabScrap,
                         wasteDiskKerfArea = kerfArea,
                         cutLines = cutLines,
-                        instructions = instructions
+                        instructions = instructions,
+                        offcuts = offcuts
                     )
                 )
                 slabIndex++
@@ -557,11 +561,24 @@ object StoneCutSolver {
                 desc.append("برای جدا کردن قطعه ${part.part.id} (${part.part.name}، ابعاد: ${part.part.width.toInt()} × ${part.part.length.toInt()} میلی‌متر).")
                 
                 if (part.isRotated) {
-                    desc.append(" (قطعه جهت کاهش ضایعات ۹۰ درجه چرخانده شده است).")
+                    desc.append(" (جهت کاهش ضایعات ۹۰ درجه چرخانده شده است).")
                 }
 
                 if (part.part.matchAdjacentTo.isNotEmpty()) {
-                    desc.append(" *هشدار تطابق رگه: این قطعه بلافاصله در کنار قطعه ${part.part.matchAdjacentTo} چیده شده است تا هماهنگی رگه‌های طبیعی سنگ حفظ شود.*")
+                    desc.append(" *هشدار تطابق رگه: این قطعه متصل به قطعه ${part.part.matchAdjacentTo} است تا رگه‌های طبیعی حفظ شود.*")
+                }
+
+                if (part.part.isBookmatch) {
+                    desc.append(" 🦋 [طرح قرینه بوک‌مچ]")
+                }
+
+                val miters = mutableListOf<String>()
+                if (part.part.miterLeft) miters.add("چپ")
+                if (part.part.miterTop) miters.add("بالا")
+                if (part.part.miterRight) miters.add("راست")
+                if (part.part.miterBottom) miters.add("پایین")
+                if (miters.isNotEmpty()) {
+                    desc.append(" 📐 [نیاز به فارسی‌بر در لبه‌های: ${miters.joinToString("، ")}]")
                 }
 
                 instructions.add(
@@ -575,6 +592,55 @@ object StoneCutSolver {
         }
 
         return instructions
+    }
+
+    private fun calculateOffcuts(
+        placedParts: List<PlacedPart>,
+        slabL: Float,
+        slabW: Float,
+        trimMargin: Float,
+        diskThickness: Float
+    ): List<OffcutRect> {
+        val offcuts = mutableListOf<OffcutRect>()
+        if (placedParts.isEmpty()) return offcuts
+
+        val shelves = placedParts.groupBy { it.y }.toSortedMap()
+        var lastShelfEndY = trimMargin
+
+        for ((shelfY, partsInShelf) in shelves) {
+            val maxHeight = partsInShelf.maxOf { it.height }
+            val shelfEndY = shelfY + maxHeight
+            
+            val rightmostX = partsInShelf.maxOf { it.x + it.width }
+            val remainingL = (slabL - trimMargin) - rightmostX
+            if (remainingL >= 150f && maxHeight >= 150f) {
+                offcuts.add(
+                    OffcutRect(
+                        x = rightmostX,
+                        y = shelfY,
+                        width = remainingL,
+                        height = maxHeight,
+                        label = "پرت مفید"
+                    )
+                )
+            }
+            lastShelfEndY = maxOf(lastShelfEndY, shelfEndY)
+        }
+
+        val remainingW = (slabW - trimMargin) - lastShelfEndY
+        val totalL = slabL - 2 * trimMargin
+        if (remainingW >= 150f && totalL >= 150f) {
+            offcuts.add(
+                OffcutRect(
+                    x = trimMargin,
+                    y = lastShelfEndY + diskThickness,
+                    width = totalL,
+                    height = remainingW - diskThickness,
+                    label = "پرت مفید"
+                )
+            )
+        }
+        return offcuts
     }
 
     private class PackableItem(

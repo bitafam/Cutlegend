@@ -2,30 +2,26 @@ package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Immersive Cyber-Stone Theme Colors
-val ImmersiveBg = Color(0xFF050608)
-val ImmersiveSurface = Color(0xFF0C0E14)
-val ImmersiveSurfaceVariant = Color(0xFF141822)
-val ImmersivePrimary = Color(0xFF22D3EE)      // Glowing Cyan
-val ImmersivePrimaryDark = Color(0xFF0891B2)  // Darker Cyan
-val ImmersiveSecondary = Color(0xFFF59E0B)    // Amber/Gold
-val ImmersiveSecondaryDark = Color(0xFFD97706)
-val ImmersiveBorder = Color(0xFF1E293B)       // Slate 800
-val ImmersiveTextPrimary = Color(0xFFF1F5F9)  // Slate 100
-val ImmersiveTextSecondary = Color(0xFF94A3B8)// Slate 400
+// Warm Eye-Friendly Stone/Sand Theme Colors (Light Mode)
+val WarmPrimary = Color(0xFF0F5A60) // Deep Slate Teal
+val WarmPrimaryContainer = Color(0xFFE0F2F1) // Soft Sage Container
+val WarmSecondary = Color(0xFF85581A) // Warm Bronze/Ochre
+val WarmBg = Color(0xFFFDFBF7) // Warm Alabaster/Sand White
+val WarmSurface = Color(0xFFF5F1EA) // Soft Stone Beige
+val WarmSurfaceVariant = Color(0xFFEBE5DB) // Warm Grey-Beige
+val WarmOutline = Color(0xFFCCC5B9) // Soft Clay Outline
+val WarmTextPrimary = Color(0xFF1C1B19) // Soft Dark Charcoal
+val WarmTextSecondary = Color(0xFF6E685E) // Dusty Brown-Grey
 
-val StoneTealDark = Color(0xFF0F3E41)
-val StoneTeal = Color(0xFF14B8A6)
-val StoneGold = Color(0xFFD97706)
-val StoneGoldLight = Color(0xFFFBBF24)
-
-val SlateLightBg = Color(0xFFF8FAFC)
-val SlateLightSurface = Color(0xFFFFFFFF)
-val SlateLightBorder = Color(0xFFE2E8F0)
-val SlateDarkBg = Color(0xFF050608)
-val SlateDarkSurface = Color(0xFF0C0E14)
-val SlateDarkBorder = Color(0xFF1E293B)
-
+// Dark Comfortable Stone Colors (Dark Mode - No pitch black, no neon)
+val DarkStoneBg = Color(0xFF161719) // Soft Warm Dark Charcoal
+val DarkStoneSurface = Color(0xFF1E2024) // Soft Dark Slate Surface
+val DarkStoneSurfaceVariant = Color(0xFF282A30) // Elevated Dark Slate
+val DarkStonePrimary = Color(0xFF80CBC4) // Soft Sage Teal
+val DarkStonePrimaryContainer = Color(0xFF004D40) // Deep Teal Container
+val DarkStoneSecondary = Color(0xFFE6C280) // Soft Sand Gold
+val DarkStoneOutline = Color(0xFF434752) // Dark Slate Outline
+val DarkStoneTextPrimary = Color(0xFFE2E8F0) // Off-White
+val DarkStoneTextSecondary = Color(0xFF94A3B8) // Muted Slate
 val TextDark = Color(0xFF0F172A)
 val TextLight = Color(0xFFF1F5F9)
-

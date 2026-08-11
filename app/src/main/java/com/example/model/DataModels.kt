@@ -1,9 +1,9 @@
 package com.example.model
 
 data class StandardSlab(
-    val length: Float = 3000f, // in mm
-    val width: Float = 1800f,  // in mm
-    val thickness: Float = 20f // in mm
+    val length: Float = 3150f, // in mm
+    val width: Float = 1500f,  // in mm
+    val thickness: Float = 14f // in mm
 )
 
 data class ScrapPiece(
@@ -20,7 +20,12 @@ data class Part(
     val length: Float,
     val width: Float,
     val allowRotation: Boolean = false,
-    val matchAdjacentTo: String = "" // Latin ID of parent part
+    val matchAdjacentTo: String = "", // Latin ID of parent part
+    val miterLeft: Boolean = false,
+    val miterTop: Boolean = false,
+    val miterRight: Boolean = false,
+    val miterBottom: Boolean = false,
+    val isBookmatch: Boolean = false
 )
 
 data class PlacedPart(
@@ -48,6 +53,14 @@ data class StepInstruction(
     val description: String
 )
 
+data class OffcutRect(
+    val x: Float,
+    val y: Float,
+    val width: Float,
+    val height: Float,
+    val label: String = "پرت مفید"
+)
+
 data class SlabLayout(
     val containerId: String, // e.g., "Slab 1" or "Scrap A"
     val isScrap: Boolean,
@@ -59,7 +72,8 @@ data class SlabLayout(
     val wasteSlabScrapArea: Float, // mm²
     val wasteDiskKerfArea: Float,  // mm²
     val cutLines: List<CutLine>,
-    val instructions: List<StepInstruction>
+    val instructions: List<StepInstruction>,
+    val offcuts: List<OffcutRect> = emptyList()
 )
 
 data class OptimizationResult(
@@ -71,3 +85,4 @@ data class OptimizationResult(
     val totalPartArea: Float,
     val slabLayouts: List<SlabLayout>
 )
+

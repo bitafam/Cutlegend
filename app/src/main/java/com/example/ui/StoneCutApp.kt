@@ -985,6 +985,12 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
     var allowRotation by remember { mutableStateOf(false) }
     var matchAdjacentTo by remember { mutableStateOf("") }
 
+    var miterLeft by remember { mutableStateOf(false) }
+    var miterTop by remember { mutableStateOf(false) }
+    var miterRight by remember { mutableStateOf(false) }
+    var miterBottom by remember { mutableStateOf(false) }
+    var isBookmatch by remember { mutableStateOf(false) }
+
     var expandedDropdown by remember { mutableStateOf(false) }
 
     LazyColumn(
@@ -1084,6 +1090,51 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
                         }
                     }
 
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Miter Edges Selection using modern FilterChips
+                    Text("فارسی‌بر لبه‌ها:", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        FilterChip(
+                            selected = miterLeft,
+                            onClick = { miterLeft = !miterLeft },
+                            label = { Text("چپ", fontSize = 11.sp) }
+                        )
+                        FilterChip(
+                            selected = miterTop,
+                            onClick = { miterTop = !miterTop },
+                            label = { Text("بالا", fontSize = 11.sp) }
+                        )
+                        FilterChip(
+                            selected = miterRight,
+                            onClick = { miterRight = !miterRight },
+                            label = { Text("راست", fontSize = 11.sp) }
+                        )
+                        FilterChip(
+                            selected = miterBottom,
+                            onClick = { miterBottom = !miterBottom },
+                            label = { Text("پایین", fontSize = 11.sp) }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = isBookmatch,
+                            onCheckedChange = { isBookmatch = it }
+                        )
+                        Text("بوک‌مچ (سنگ متقارن پروانه‌ای 🦋)", fontSize = 13.sp)
+                    }
+
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Button(
@@ -1091,12 +1142,28 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
                             val l = lStr.toFloatOrNull()
                             val w = wStr.toFloatOrNull()
                             if (name.isNotEmpty() && l != null && w != null) {
-                                viewModel.addPart(name, l, w, allowRotation, matchAdjacentTo)
+                                viewModel.addPart(
+                                    name = name,
+                                    length = l,
+                                    width = w,
+                                    allowRotation = allowRotation,
+                                    matchAdjacentTo = matchAdjacentTo,
+                                    miterLeft = miterLeft,
+                                    miterTop = miterTop,
+                                    miterRight = miterRight,
+                                    miterBottom = miterBottom,
+                                    isBookmatch = isBookmatch
+                                )
                                 name = ""
                                 lStr = ""
                                 wStr = ""
                                 allowRotation = false
                                 matchAdjacentTo = ""
+                                miterLeft = false
+                                miterTop = false
+                                miterRight = false
+                                miterBottom = false
+                                isBookmatch = false
                             }
                         },
                         modifier = Modifier.fillMaxWidth().testTag("add_part_submit_button")
@@ -1224,6 +1291,33 @@ fun PartRowItem(part: Part, onDelete: () -> Unit) {
                                         tint = MaterialTheme.colorScheme.primary
                                     )
                                 }
+                            )
+                        }
+
+                        if (part.isBookmatch) {
+                            SuggestionChip(
+                                onClick = {},
+                                label = { Text("بوک‌مچ 🦋", fontSize = 10.sp) },
+                                modifier = Modifier.scale(0.85f),
+                                colors = SuggestionChipDefaults.suggestionChipColors(
+                                    containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
+                                )
+                            )
+                        }
+
+                        val miters = mutableListOf<String>()
+                        if (part.miterLeft) miters.add("چپ")
+                        if (part.miterTop) miters.add("بالا")
+                        if (part.miterRight) miters.add("راست")
+                        if (part.miterBottom) miters.add("پایین")
+                        if (miters.isNotEmpty()) {
+                            SuggestionChip(
+                                onClick = {},
+                                label = { Text("📐 فارسی‌بر: ${miters.joinToString("، ")}", fontSize = 10.sp) },
+                                modifier = Modifier.scale(0.85f),
+                                colors = SuggestionChipDefaults.suggestionChipColors(
+                                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
+                                )
                             )
                         }
                     }
@@ -1435,14 +1529,20 @@ fun StoneLayoutCanvas(layout: SlabLayout, diskThickness: Float, trimMargin: Floa
     val totalL = layout.originalLength
     val totalW = layout.originalWidth
 
-    val primaryContainerColor = MaterialTheme.colorScheme.primaryContainer
+    val isDark = isSystemInDarkTheme()
+    val canvasBg = if (isDark) Color(0xFF161719) else Color(0xFFF7F5F0)
+    val slabColor = if (isDark) Color(0xFF222429) else Color(0xFFEBE6DC)
+    val slabOutlineColor = if (isDark) Color(0xFF383C48) else Color(0xFFCCC4B4)
+
     val primaryColor = MaterialTheme.colorScheme.primary
+    val secondaryColor = MaterialTheme.colorScheme.secondary
+    val outlineColor = MaterialTheme.colorScheme.outline
 
     Canvas(
         modifier = Modifier
             .fillMaxWidth()
             .height(240.dp)
-            .background(Color(0xFF080A0F))
+            .background(canvasBg)
     ) {
         val canvasWidth = size.width
         val canvasHeight = size.height
@@ -1457,21 +1557,21 @@ fun StoneLayoutCanvas(layout: SlabLayout, diskThickness: Float, trimMargin: Floa
 
         // 1. Draw Slab Base (High-tech Slate/Dark Marble look)
         drawRect(
-            color = Color(0xFF121620),
+            color = slabColor,
             topLeft = Offset(ox, oy),
             size = Size(totalL * scale, totalW * scale)
         )
         // Outline of the slab
         drawRect(
-            color = Color(0xFF1E293B),
+            color = slabOutlineColor,
             topLeft = Offset(ox, oy),
             size = Size(totalL * scale, totalW * scale),
             style = Stroke(width = 1.dp.toPx())
         )
 
         // Draw natural stone veins running diagonally (representing continuous grain)
-        val veinColor1 = Color(0x1F22D3EE) // Glowing matrix cyan vein
-        val veinColor2 = Color(0x18F59E0B) // Glowing golden vein
+        val veinColor1 = primaryColor.copy(alpha = 0.15f)
+        val veinColor2 = secondaryColor.copy(alpha = 0.15f)
         val strokeVein = Stroke(width = 2.dp.toPx(), miter = 4f, cap = StrokeCap.Round)
 
         for (i in -2..6) {
@@ -1491,7 +1591,7 @@ fun StoneLayoutCanvas(layout: SlabLayout, diskThickness: Float, trimMargin: Floa
         if (trimMargin > 0f) {
             val tmScaled = trimMargin * scale
             drawRect(
-                color = Color(0xFFEF4444).copy(alpha = 0.5f),
+                color = Color(0xFFEF4444).copy(alpha = 0.4f),
                 topLeft = Offset(ox + tmScaled, oy + tmScaled),
                 size = Size((totalL - 2 * trimMargin) * scale, (totalW - 2 * trimMargin) * scale),
                 style = Stroke(
@@ -1508,13 +1608,13 @@ fun StoneLayoutCanvas(layout: SlabLayout, diskThickness: Float, trimMargin: Floa
             val pw = part.width * scale
             val ph = part.height * scale
 
-            // Draw filled block - Translucent Glowing glass
+            // Draw filled block - Translucent matching theme
             drawRect(
-                color = primaryColor.copy(alpha = 0.12f),
+                color = primaryColor.copy(alpha = 0.15f),
                 topLeft = Offset(px, py),
                 size = Size(pw, ph)
             )
-            // Draw glowing cyan border
+            // Draw matching border
             drawRect(
                 color = primaryColor,
                 topLeft = Offset(px, py),
@@ -1529,23 +1629,126 @@ fun StoneLayoutCanvas(layout: SlabLayout, diskThickness: Float, trimMargin: Floa
             }
             drawPath(
                 partVeinPath,
-                color = Color(0xFFF59E0B).copy(alpha = 0.7f),
+                color = secondaryColor.copy(alpha = 0.6f),
                 style = Stroke(
                     width = 1.5f.dp.toPx(),
                     pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 6f), 0f)
                 )
             )
 
-            // Draw text label with parsed high-contrast colors
+            // Draw miter hatching if enabled
+            val drawMiterLeft = if (part.isRotated) part.part.miterBottom else part.part.miterLeft
+            val drawMiterTop = if (part.isRotated) part.part.miterLeft else part.part.miterTop
+            val drawMiterRight = if (part.isRotated) part.part.miterTop else part.part.miterRight
+            val drawMiterBottom = if (part.isRotated) part.part.miterRight else part.part.miterBottom
+
+            val miterHatchColor = Color(0xFFEF4444) // Bright red for miter cut highlight
+
+            if (drawMiterLeft) {
+                val hatchSize = 8.dp.toPx()
+                val step = 12.dp.toPx()
+                var currY = py
+                while (currY < py + ph) {
+                    val nextY = minOf(currY + hatchSize, py + ph)
+                    val nextX = px + (nextY - currY)
+                    drawLine(
+                        color = miterHatchColor,
+                        start = Offset(px, currY),
+                        end = Offset(nextX, nextY),
+                        strokeWidth = 2.dp.toPx()
+                    )
+                    currY += step
+                }
+                drawLine(
+                    color = miterHatchColor,
+                    start = Offset(px, py),
+                    end = Offset(px, py + ph),
+                    strokeWidth = 3.dp.toPx()
+                )
+            }
+
+            if (drawMiterRight) {
+                val hatchSize = 8.dp.toPx()
+                val step = 12.dp.toPx()
+                var currY = py
+                while (currY < py + ph) {
+                    val nextY = minOf(currY + hatchSize, py + ph)
+                    val nextX = px + pw - (nextY - currY)
+                    drawLine(
+                        color = miterHatchColor,
+                        start = Offset(px + pw, currY),
+                        end = Offset(nextX, nextY),
+                        strokeWidth = 2.dp.toPx()
+                    )
+                    currY += step
+                }
+                drawLine(
+                    color = miterHatchColor,
+                    start = Offset(px + pw, py),
+                    end = Offset(px + pw, py + ph),
+                    strokeWidth = 3.dp.toPx()
+                )
+            }
+
+            if (drawMiterTop) {
+                val hatchSize = 8.dp.toPx()
+                val step = 12.dp.toPx()
+                var currX = px
+                while (currX < px + pw) {
+                    val nextX = minOf(currX + hatchSize, px + pw)
+                    val nextY = py + (nextX - currX)
+                    drawLine(
+                        color = miterHatchColor,
+                        start = Offset(currX, py),
+                        end = Offset(nextX, nextY),
+                        strokeWidth = 2.dp.toPx()
+                    )
+                    currX += step
+                }
+                drawLine(
+                    color = miterHatchColor,
+                    start = Offset(px, py),
+                    end = Offset(px + pw, py),
+                    strokeWidth = 3.dp.toPx()
+                )
+            }
+
+            if (drawMiterBottom) {
+                val hatchSize = 8.dp.toPx()
+                val step = 12.dp.toPx()
+                var currX = px
+                while (currX < px + pw) {
+                    val nextX = minOf(currX + hatchSize, px + pw)
+                    val nextY = py + ph - (nextX - currX)
+                    drawLine(
+                        color = miterHatchColor,
+                        start = Offset(currX, py + ph),
+                        end = Offset(nextX, nextY),
+                        strokeWidth = 2.dp.toPx()
+                    )
+                    currX += step
+                }
+                drawLine(
+                    color = miterHatchColor,
+                    start = Offset(px, py + ph),
+                    end = Offset(px + pw, py + ph),
+                    strokeWidth = 3.dp.toPx()
+                )
+            }
+
+            // Draw text label with high contrast
+            val textColorHex = if (isDark) "#80CBC4" else "#0F5A60"
+            val detailColorHex = if (isDark) "#E2E8F0" else "#1C1B19"
+
             val textPaint = android.graphics.Paint().apply {
-                color = android.graphics.Color.parseColor("#22D3EE") // High-tech cyan
-                textSize = 13.dp.toPx()
+                color = android.graphics.Color.parseColor(textColorHex)
+                textSize = 12.dp.toPx()
                 isFakeBoldText = true
                 textAlign = android.graphics.Paint.Align.CENTER
             }
             
             val detailsPaint = android.graphics.Paint().apply {
-                color = android.graphics.Color.parseColor("#E2E8F0") // Off-white/light slate
+                color = android.graphics.Color.parseColor(detailColorHex)
                 textSize = 9.dp.toPx()
                 textAlign = android.graphics.Paint.Align.CENTER
             }
@@ -1558,11 +1761,32 @@ fun StoneLayoutCanvas(layout: SlabLayout, diskThickness: Float, trimMargin: Floa
                     textPaint
                 )
                 canvas.nativeCanvas.drawText(
-                    "${part.part.width.toInt()} × ${part.part.length.toInt()} میلی‌متر",
+                    "${part.part.width.toInt()} × ${part.part.length.toInt()} م‌م",
                     px + pw / 2f,
                     py + ph / 2f + 11.dp.toPx(),
                     detailsPaint
                 )
+            }
+
+            // Draw badges inside part
+            val miterLabel = if (part.part.miterLeft || part.part.miterTop || part.part.miterRight || part.part.miterBottom) "📐" else ""
+            val bmLabel = if (part.part.isBookmatch || part.part.matchAdjacentTo.isNotEmpty()) "🦋" else ""
+            val badgeStr = listOfNotNull(miterLabel.takeIf { it.isNotEmpty() }, bmLabel.takeIf { it.isNotEmpty() }).joinToString(" ")
+
+            if (badgeStr.isNotEmpty()) {
+                val badgePaint = android.graphics.Paint().apply {
+                    color = android.graphics.Color.parseColor(if (isDark) "#E6C280" else "#85581A")
+                    textSize = 10.dp.toPx()
+                    isFakeBoldText = true
+                }
+                drawIntoCanvas { canvas ->
+                    canvas.nativeCanvas.drawText(
+                        badgeStr,
+                        px + 6.dp.toPx() + 8.dp.toPx(),
+                        py + 15.dp.toPx(),
+                        badgePaint
+                    )
+                }
             }
         }
 
@@ -1574,7 +1798,7 @@ fun StoneLayoutCanvas(layout: SlabLayout, diskThickness: Float, trimMargin: Floa
             val cyEnd = oy + cut.endY * scale
 
             drawLine(
-                color = if (cut.isPrimary) Color(0xFFF59E0B) else Color(0xFF22D3EE),
+                color = if (cut.isPrimary) secondaryColor else primaryColor,
                 start = Offset(cxStart, cyStart),
                 end = Offset(cxEnd, cyEnd),
                 strokeWidth = if (cut.isPrimary) 2.dp.toPx() else 1.2f.dp.toPx(),
@@ -1595,6 +1819,59 @@ fun StoneLayoutCanvas(layout: SlabLayout, diskThickness: Float, trimMargin: Floa
                     // Draw a continuous vein arrow
                     drawVeinIndicatorArrow(fromX, fromY, toX, toY)
                 }
+            }
+        }
+
+        // 5. Draw Offcuts (useful remaining pieces labeled as "پرت")
+        layout.offcuts.forEach { offcut ->
+            val ox_off = ox + offcut.x * scale
+            val oy_off = oy + offcut.y * scale
+            val ow_off = offcut.width * scale
+            val oh_off = offcut.height * scale
+
+            // Draw translucent dashed amber/gold background
+            drawRect(
+                color = secondaryColor.copy(alpha = 0.05f),
+                topLeft = Offset(ox_off, oy_off),
+                size = Size(ow_off, oh_off)
+            )
+            // Draw dashed amber outline
+            drawRect(
+                color = secondaryColor.copy(alpha = 0.5f),
+                topLeft = Offset(ox_off, oy_off),
+                size = Size(ow_off, oh_off),
+                style = Stroke(
+                    width = 1.dp.toPx(),
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 6f), 0f)
+                )
+            )
+
+            // Draw label "پرت مفید" with dimensions inside
+            val offcutLabelPaint = android.graphics.Paint().apply {
+                color = android.graphics.Color.parseColor(if (isDark) "#E6C280" else "#85581A")
+                textSize = 9.dp.toPx()
+                textAlign = android.graphics.Paint.Align.CENTER
+            }
+            val offcutDimPaint = android.graphics.Paint().apply {
+                val detailColorHex = if (isDark) "#E2E8F0" else "#1C1B19"
+                color = android.graphics.Color.parseColor(detailColorHex)
+                textSize = 7.dp.toPx()
+                textAlign = android.graphics.Paint.Align.CENTER
+            }
+
+            drawIntoCanvas { canvas ->
+                canvas.nativeCanvas.drawText(
+                    "پرت مفید",
+                    ox_off + ow_off / 2f,
+                    oy_off + oh_off / 2f,
+                    offcutLabelPaint
+                )
+                canvas.nativeCanvas.drawText(
+                    "${offcut.width.toInt()} × ${offcut.height.toInt()} م‌م",
+                    ox_off + ow_off / 2f,
+                    oy_off + oh_off / 2f + 9.dp.toPx(),
+                    offcutDimPaint
+                )
             }
         }
     }

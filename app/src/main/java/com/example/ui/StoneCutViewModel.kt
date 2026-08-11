@@ -72,10 +72,10 @@ class StoneCutViewModel(application: Application) : AndroidViewModel(application
     )
     val parts: StateFlow<List<Part>> = _parts.asStateFlow()
 
-    private val _diskThickness = MutableStateFlow(3.5f)
+    private val _diskThickness = MutableStateFlow(5f)
     val diskThickness: StateFlow<Float> = _diskThickness.asStateFlow()
 
-    private val _trimMargin = MutableStateFlow(10f)
+    private val _trimMargin = MutableStateFlow(20f)
     val trimMargin: StateFlow<Float> = _trimMargin.asStateFlow()
 
     private val _optimizationResult = MutableStateFlow<OptimizationResult?>(null)
@@ -126,9 +126,32 @@ class StoneCutViewModel(application: Application) : AndroidViewModel(application
         triggerOptimization()
     }
 
-    fun addPart(name: String, length: Float, width: Float, allowRotation: Boolean, matchAdjacentTo: String) {
+    fun addPart(
+        name: String,
+        length: Float,
+        width: Float,
+        allowRotation: Boolean,
+        matchAdjacentTo: String,
+        miterLeft: Boolean = false,
+        miterTop: Boolean = false,
+        miterRight: Boolean = false,
+        miterBottom: Boolean = false,
+        isBookmatch: Boolean = false
+    ) {
         val nextId = getNextLatinId()
-        val newPart = Part(nextId, name, length, width, allowRotation, matchAdjacentTo)
+        val newPart = Part(
+            id = nextId,
+            name = name,
+            length = length,
+            width = width,
+            allowRotation = allowRotation,
+            matchAdjacentTo = matchAdjacentTo,
+            miterLeft = miterLeft,
+            miterTop = miterTop,
+            miterRight = miterRight,
+            miterBottom = miterBottom,
+            isBookmatch = isBookmatch
+        )
         _parts.value = _parts.value + newPart
         triggerOptimization()
     }
@@ -156,9 +179,9 @@ class StoneCutViewModel(application: Application) : AndroidViewModel(application
 
     fun loadLShapedCountertopTemplate() {
         _parts.value = listOf(
-            Part(id = "A", name = "اسلب اصلی الف", length = 600f, width = 1800f, allowRotation = false),
-            Part(id = "B", name = "اسلب پیشانی ال‌شکل ب", length = 600f, width = 1200f, allowRotation = false, matchAdjacentTo = "A"),
-            Part(id = "C", name = "قرنیز دیواری بلند ج", length = 300f, width = 1800f, allowRotation = false, matchAdjacentTo = "B"),
+            Part(id = "A", name = "اسلب اصلی الف", length = 600f, width = 1800f, allowRotation = false, miterLeft = true, miterTop = true),
+            Part(id = "B", name = "اسلب پیشانی ال‌شکل ب", length = 600f, width = 1200f, allowRotation = false, matchAdjacentTo = "A", miterBottom = true),
+            Part(id = "C", name = "قرنیز دیواری بلند ج", length = 300f, width = 1800f, allowRotation = false, matchAdjacentTo = "B", miterRight = true),
             Part(id = "D", name = "نوار برش تزیینی د", length = 150f, width = 900f, allowRotation = true),
             Part(id = "E", name = "نگین سنگی تزیینی ه", length = 200f, width = 200f, allowRotation = true)
         )
@@ -167,9 +190,9 @@ class StoneCutViewModel(application: Application) : AndroidViewModel(application
 
     fun loadWallCladdingTemplate() {
         _parts.value = listOf(
-            Part(id = "A", name = "پنل دیواری چپ", length = 1200f, width = 1400f, allowRotation = false),
-            Part(id = "B", name = "پنل دیواری راست بوک‌مچ", length = 1200f, width = 1400f, allowRotation = false, matchAdjacentTo = "A"),
-            Part(id = "C", name = "باند تزیینی بالای دیوار", length = 400f, width = 2800f, allowRotation = false),
+            Part(id = "A", name = "پنل دیواری چپ", length = 1200f, width = 1400f, allowRotation = false, isBookmatch = true),
+            Part(id = "B", name = "پنل دیواری راست بوک‌مچ", length = 1200f, width = 1400f, allowRotation = false, matchAdjacentTo = "A", isBookmatch = true),
+            Part(id = "C", name = "باند تزیینی بالای دیوار", length = 400f, width = 2800f, allowRotation = false, miterTop = true),
             Part(id = "D", name = "نوار حاشیه چپ کوچک", length = 150f, width = 600f, allowRotation = true),
             Part(id = "E", name = "نوار حاشیه راست کوچک", length = 150f, width = 600f, allowRotation = true)
         )
@@ -283,8 +306,8 @@ class StoneCutViewModel(application: Application) : AndroidViewModel(application
         _currentProjectId.value = null
         _currentProjectName.value = null
         _standardSlab.value = StandardSlab()
-        _diskThickness.value = 3.5f
-        _trimMargin.value = 10f
+        _diskThickness.value = 5f
+        _trimMargin.value = 20f
         _useScrap.value = true
         _parts.value = emptyList()
         _scrapInventory.value = emptyList()
@@ -580,6 +603,35 @@ class StoneCutViewModel(application: Application) : AndroidViewModel(application
                             val dimsW = textPaint.measureText(dimsText)
                             canvas.drawText(dimsText, px + pw / 2f - dimsW / 2f, py + ph / 2f + 12f, textPaint)
                         }
+                    }
+
+                    // Draw useful offcuts inside the slab
+                    layout.offcuts.forEach { offcut ->
+                        val ox_off = drawStartX + offcut.x * scale
+                        val oy_off = drawStartY + offcut.y * scale
+                        val ow_off = offcut.width * scale
+                        val oh_off = offcut.height * scale
+
+                        // Draw offcut fill (light orange/amber)
+                        paint.color = Color.parseColor("#FFF3E0")
+                        canvas.drawRect(ox_off, oy_off, ox_off + ow_off, oy_off + oh_off, paint)
+
+                        // Draw dashed border
+                        paint.color = Color.parseColor("#FFB74D")
+                        paint.style = Paint.Style.STROKE
+                        paint.strokeWidth = 1f
+                        val dashPath = android.graphics.Path()
+                        dashPath.addRect(ox_off, oy_off, ox_off + ow_off, oy_off + oh_off, android.graphics.Path.Direction.CW)
+                        canvas.drawPath(dashPath, paint)
+                        paint.style = Paint.Style.FILL // Reset
+
+                        // Draw text "پرت مفید"
+                        textPaint.color = Color.parseColor("#E65100")
+                        textPaint.textSize = 8f
+                        textPaint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                        val lbl = "پرت"
+                        val lblW = textPaint.measureText(lbl)
+                        canvas.drawText(lbl, ox_off + ow_off / 2f - lblW / 2f, oy_off + oh_off / 2f + 3f, textPaint)
                     }
 
                     // Operator Instructions section below

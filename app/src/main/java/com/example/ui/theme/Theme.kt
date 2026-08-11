@@ -12,29 +12,31 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = ImmersivePrimary,
-    secondary = ImmersiveSecondary,
-    background = ImmersiveBg,
-    surface = ImmersiveSurface,
-    surfaceVariant = ImmersiveSurfaceVariant,
-    onPrimary = Color.Black,
-    onSecondary = Color.Black,
-    onBackground = ImmersiveTextPrimary,
-    onSurface = ImmersiveTextPrimary,
-    outline = ImmersiveBorder
+    primary = DarkStonePrimary,
+    primaryContainer = DarkStonePrimaryContainer,
+    secondary = DarkStoneSecondary,
+    background = DarkStoneBg,
+    surface = DarkStoneSurface,
+    surfaceVariant = DarkStoneSurfaceVariant,
+    onPrimary = TextDark,
+    onSecondary = TextDark,
+    onBackground = DarkStoneTextPrimary,
+    onSurface = DarkStoneTextPrimary,
+    outline = DarkStoneOutline
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = ImmersivePrimaryDark,
-    secondary = ImmersiveSecondaryDark,
-    background = ImmersiveBg,
-    surface = ImmersiveSurface,
-    surfaceVariant = ImmersiveSurfaceVariant,
+    primary = WarmPrimary,
+    primaryContainer = WarmPrimaryContainer,
+    secondary = WarmSecondary,
+    background = WarmBg,
+    surface = WarmSurface,
+    surfaceVariant = WarmSurfaceVariant,
     onPrimary = Color.White,
     onSecondary = Color.White,
-    onBackground = ImmersiveTextPrimary,
-    onSurface = ImmersiveTextPrimary,
-    outline = ImmersiveBorder
+    onBackground = WarmTextPrimary,
+    onSurface = WarmTextPrimary,
+    outline = WarmOutline
 )
 
 @Composable
