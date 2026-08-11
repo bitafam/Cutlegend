@@ -136,7 +136,11 @@ class StoneCutViewModel(application: Application) : AndroidViewModel(application
         miterTop: Boolean = false,
         miterRight: Boolean = false,
         miterBottom: Boolean = false,
-        isBookmatch: Boolean = false
+        isBookmatch: Boolean = false,
+        bookmatchLeft: Boolean = false,
+        bookmatchTop: Boolean = false,
+        bookmatchRight: Boolean = false,
+        bookmatchBottom: Boolean = false
     ) {
         val nextId = getNextLatinId()
         val newPart = Part(
@@ -150,7 +154,11 @@ class StoneCutViewModel(application: Application) : AndroidViewModel(application
             miterTop = miterTop,
             miterRight = miterRight,
             miterBottom = miterBottom,
-            isBookmatch = isBookmatch
+            isBookmatch = isBookmatch,
+            bookmatchLeft = bookmatchLeft,
+            bookmatchTop = bookmatchTop,
+            bookmatchRight = bookmatchRight,
+            bookmatchBottom = bookmatchBottom
         )
         _parts.value = _parts.value + newPart
         triggerOptimization()
@@ -190,8 +198,8 @@ class StoneCutViewModel(application: Application) : AndroidViewModel(application
 
     fun loadWallCladdingTemplate() {
         _parts.value = listOf(
-            Part(id = "A", name = "پنل دیواری چپ", length = 1200f, width = 1400f, allowRotation = false, isBookmatch = true),
-            Part(id = "B", name = "پنل دیواری راست بوک‌مچ", length = 1200f, width = 1400f, allowRotation = false, matchAdjacentTo = "A", isBookmatch = true),
+            Part(id = "A", name = "پنل دیواری چپ", length = 1200f, width = 1400f, allowRotation = false, isBookmatch = true, bookmatchRight = true),
+            Part(id = "B", name = "پنل دیواری راست بوک‌مچ", length = 1200f, width = 1400f, allowRotation = false, matchAdjacentTo = "A", isBookmatch = true, bookmatchLeft = true),
             Part(id = "C", name = "باند تزیینی بالای دیوار", length = 400f, width = 2800f, allowRotation = false, miterTop = true),
             Part(id = "D", name = "نوار حاشیه چپ کوچک", length = 150f, width = 600f, allowRotation = true),
             Part(id = "E", name = "نوار حاشیه راست کوچک", length = 150f, width = 600f, allowRotation = true)
@@ -586,6 +594,113 @@ class StoneCutViewModel(application: Application) : AndroidViewModel(application
                         paint.strokeWidth = 1.2f
                         canvas.drawRect(px, py, px + pw, py + ph, paint)
                         paint.style = Paint.Style.FILL // Reset
+
+                        val drawMiterLeft = if (part.isRotated) part.part.miterBottom else part.part.miterLeft
+                        val drawMiterTop = if (part.isRotated) part.part.miterLeft else part.part.miterTop
+                        val drawMiterRight = if (part.isRotated) part.part.miterTop else part.part.miterRight
+                        val drawMiterBottom = if (part.isRotated) part.part.miterRight else part.part.miterBottom
+
+                        val drawBookmatchLeft = if (part.isRotated) part.part.bookmatchBottom else part.part.bookmatchLeft
+                        val drawBookmatchTop = if (part.isRotated) part.part.bookmatchLeft else part.part.bookmatchTop
+                        val drawBookmatchRight = if (part.isRotated) part.part.bookmatchTop else part.part.bookmatchRight
+                        val drawBookmatchBottom = if (part.isRotated) part.part.bookmatchRight else part.part.bookmatchBottom
+
+                        // Draw Miter Hatching (Black Hatching)
+                        val hatchPaint = Paint().apply {
+                            color = Color.BLACK
+                            strokeWidth = 1f
+                            style = Paint.Style.STROKE
+                        }
+                        
+                        if (drawMiterLeft) {
+                            val step = 8f
+                            var currY = py
+                            while (currY < py + ph) {
+                                val nextY = Math.min(currY + 6f, py + ph)
+                                val nextX = px + (nextY - currY)
+                                canvas.drawLine(px, currY, nextX, nextY, hatchPaint)
+                                currY += step
+                            }
+                            // Bold black edge
+                            paint.color = Color.BLACK
+                            paint.style = Paint.Style.STROKE
+                            paint.strokeWidth = 2f
+                            canvas.drawLine(px, py, px, py + ph, paint)
+                            paint.style = Paint.Style.FILL // Reset
+                        }
+                        if (drawMiterRight) {
+                            val step = 8f
+                            var currY = py
+                            while (currY < py + ph) {
+                                val nextY = Math.min(currY + 6f, py + ph)
+                                val nextX = px + pw - (nextY - currY)
+                                canvas.drawLine(px + pw, currY, nextX, nextY, hatchPaint)
+                                currY += step
+                            }
+                            // Bold black edge
+                            paint.color = Color.BLACK
+                            paint.style = Paint.Style.STROKE
+                            paint.strokeWidth = 2f
+                            canvas.drawLine(px + pw, py, px + pw, py + ph, paint)
+                            paint.style = Paint.Style.FILL // Reset
+                        }
+                        if (drawMiterTop) {
+                            val step = 8f
+                            var currX = px
+                            while (currX < px + pw) {
+                                val nextX = Math.min(currX + 6f, px + pw)
+                                val nextY = py + (nextX - currX)
+                                canvas.drawLine(currX, py, nextX, nextY, hatchPaint)
+                                currX += step
+                            }
+                            // Bold black edge
+                            paint.color = Color.BLACK
+                            paint.style = Paint.Style.STROKE
+                            paint.strokeWidth = 2f
+                            canvas.drawLine(px, py, px + pw, py, paint)
+                            paint.style = Paint.Style.FILL // Reset
+                        }
+                        if (drawMiterBottom) {
+                            val step = 8f
+                            var currX = px
+                            while (currX < px + pw) {
+                                val nextX = Math.min(currX + 6f, px + pw)
+                                val nextY = py + ph - (nextX - currX)
+                                canvas.drawLine(currX, py + ph, nextX, nextY, hatchPaint)
+                                currX += step
+                            }
+                            // Bold black edge
+                            paint.color = Color.BLACK
+                            paint.style = Paint.Style.STROKE
+                            paint.strokeWidth = 2f
+                            canvas.drawLine(px, py + ph, px + pw, py + ph, paint)
+                            paint.style = Paint.Style.FILL // Reset
+                        }
+
+                        // Draw Bookmatch (Double Orange Lines)
+                        val orangeColor = Color.parseColor("#FF9800")
+                        val bmPaint = Paint().apply {
+                            color = orangeColor
+                            strokeWidth = 1.5f
+                            style = Paint.Style.STROKE
+                        }
+
+                        if (drawBookmatchLeft) {
+                            canvas.drawLine(px + 1.2f, py, px + 1.2f, py + ph, bmPaint)
+                            canvas.drawLine(px + 3.5f, py, px + 3.5f, py + ph, bmPaint)
+                        }
+                        if (drawBookmatchRight) {
+                            canvas.drawLine(px + pw - 1.2f, py, px + pw - 1.2f, py + ph, bmPaint)
+                            canvas.drawLine(px + pw - 3.5f, py, px + pw - 3.5f, py + ph, bmPaint)
+                        }
+                        if (drawBookmatchTop) {
+                            canvas.drawLine(px, py + 1.2f, px + pw, py + 1.2f, bmPaint)
+                            canvas.drawLine(px, py + 3.5f, px + pw, py + 3.5f, bmPaint)
+                        }
+                        if (drawBookmatchBottom) {
+                            canvas.drawLine(px, py + ph - 1.2f, px + pw, py + ph - 1.2f, bmPaint)
+                            canvas.drawLine(px, py + ph - 3.5f, px + pw, py + ph - 3.5f, bmPaint)
+                        }
 
                         // Text labels centered
                         textPaint.color = Color.parseColor("#1B5E20")

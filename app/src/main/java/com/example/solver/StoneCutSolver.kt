@@ -168,7 +168,7 @@ object StoneCutSolver {
 
         // Run multi-heuristic evaluations to minimize standard slab usage and maximize efficiency
         val sortMethods = listOf("height", "width", "area", "short_side", "long_side")
-        val transposeOptions = listOf(false, true)
+        val transposeOptions = listOf(false)
 
         var bestLayouts = emptyList<SlabLayout>()
         var bestSlabsCount = Int.MAX_VALUE
@@ -569,7 +569,16 @@ object StoneCutSolver {
                 }
 
                 if (part.part.isBookmatch) {
-                    desc.append(" 🦋 [طرح قرینه بوک‌مچ]")
+                    val bmSides = mutableListOf<String>()
+                    if (part.part.bookmatchLeft) bmSides.add("چپ")
+                    if (part.part.bookmatchTop) bmSides.add("بالا")
+                    if (part.part.bookmatchRight) bmSides.add("راست")
+                    if (part.part.bookmatchBottom) bmSides.add("پایین")
+                    if (bmSides.isNotEmpty()) {
+                        desc.append(" [طرح قرینه بوک‌مچ در لبه‌های: ${bmSides.joinToString("، ")}]")
+                    } else {
+                        desc.append(" [طرح قرینه بوک‌مچ]")
+                    }
                 }
 
                 val miters = mutableListOf<String>()

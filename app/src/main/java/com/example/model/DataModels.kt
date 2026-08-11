@@ -25,7 +25,11 @@ data class Part(
     val miterTop: Boolean = false,
     val miterRight: Boolean = false,
     val miterBottom: Boolean = false,
-    val isBookmatch: Boolean = false
+    val isBookmatch: Boolean = false,
+    val bookmatchLeft: Boolean = false,
+    val bookmatchTop: Boolean = false,
+    val bookmatchRight: Boolean = false,
+    val bookmatchBottom: Boolean = false
 )
 
 data class PlacedPart(

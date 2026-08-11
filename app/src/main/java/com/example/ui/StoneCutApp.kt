@@ -989,9 +989,46 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
     var miterTop by remember { mutableStateOf(false) }
     var miterRight by remember { mutableStateOf(false) }
     var miterBottom by remember { mutableStateOf(false) }
-    var isBookmatch by remember { mutableStateOf(false) }
 
+    var bookmatchLeft by remember { mutableStateOf(false) }
+    var bookmatchTop by remember { mutableStateOf(false) }
+    var bookmatchRight by remember { mutableStateOf(false) }
+    var bookmatchBottom by remember { mutableStateOf(false) }
+
+    var editingPart by remember { mutableStateOf<Part?>(null) }
     var expandedDropdown by remember { mutableStateOf(false) }
+
+    LaunchedEffect(editingPart) {
+        if (editingPart != null) {
+            name = editingPart!!.name
+            lStr = editingPart!!.length.toInt().toString()
+            wStr = editingPart!!.width.toInt().toString()
+            allowRotation = editingPart!!.allowRotation
+            matchAdjacentTo = editingPart!!.matchAdjacentTo
+            miterLeft = editingPart!!.miterLeft
+            miterTop = editingPart!!.miterTop
+            miterRight = editingPart!!.miterRight
+            miterBottom = editingPart!!.miterBottom
+            bookmatchLeft = editingPart!!.bookmatchLeft
+            bookmatchTop = editingPart!!.bookmatchTop
+            bookmatchRight = editingPart!!.bookmatchRight
+            bookmatchBottom = editingPart!!.bookmatchBottom
+        } else {
+            name = ""
+            lStr = ""
+            wStr = ""
+            allowRotation = false
+            matchAdjacentTo = ""
+            miterLeft = false
+            miterTop = false
+            miterRight = false
+            miterBottom = false
+            bookmatchLeft = false
+            bookmatchTop = false
+            bookmatchRight = false
+            bookmatchBottom = false
+        }
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -999,7 +1036,7 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Add Part Input Card
+        // Add/Edit Part Input Card
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -1008,7 +1045,7 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "افزودن قطعه برای برش",
+                        text = if (editingPart == null) "افزودن قطعه برای برش" else "ویرایش قطعه ${editingPart!!.id}",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -1078,13 +1115,15 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
                                     }
                                 )
                                 parts.forEach { p ->
-                                    DropdownMenuItem(
-                                        text = { Text("پیوستگی رگه با قطعه ${p.id} (${p.name})") },
-                                        onClick = {
-                                            matchAdjacentTo = p.id
-                                            expandedDropdown = false
-                                        }
-                                    )
+                                    if (editingPart == null || p.id != editingPart!!.id) {
+                                        DropdownMenuItem(
+                                            text = { Text("پیوستگی رگه با قطعه ${p.id} (${p.name})") },
+                                            onClick = {
+                                                matchAdjacentTo = p.id
+                                                expandedDropdown = false
+                                            }
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -1124,53 +1163,117 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
 
                     Spacer(modifier = Modifier.height(12.dp))
 
+                    // Bookmatch Edges Selection
+                    Text("لبه‌های بوک‌مچ (طرح قرینه):", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(4.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Checkbox(
-                            checked = isBookmatch,
-                            onCheckedChange = { isBookmatch = it }
+                        FilterChip(
+                            selected = bookmatchLeft,
+                            onClick = { bookmatchLeft = !bookmatchLeft },
+                            label = { Text("چپ", fontSize = 11.sp) }
                         )
-                        Text("بوک‌مچ (سنگ متقارن پروانه‌ای 🦋)", fontSize = 13.sp)
+                        FilterChip(
+                            selected = bookmatchTop,
+                            onClick = { bookmatchTop = !bookmatchTop },
+                            label = { Text("بالا", fontSize = 11.sp) }
+                        )
+                        FilterChip(
+                            selected = bookmatchRight,
+                            onClick = { bookmatchRight = !bookmatchRight },
+                            label = { Text("راست", fontSize = 11.sp) }
+                        )
+                        FilterChip(
+                            selected = bookmatchBottom,
+                            onClick = { bookmatchBottom = !bookmatchBottom },
+                            label = { Text("پایین", fontSize = 11.sp) }
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    Button(
-                        onClick = {
-                            val l = lStr.toFloatOrNull()
-                            val w = wStr.toFloatOrNull()
-                            if (name.isNotEmpty() && l != null && w != null) {
-                                viewModel.addPart(
-                                    name = name,
-                                    length = l,
-                                    width = w,
-                                    allowRotation = allowRotation,
-                                    matchAdjacentTo = matchAdjacentTo,
-                                    miterLeft = miterLeft,
-                                    miterTop = miterTop,
-                                    miterRight = miterRight,
-                                    miterBottom = miterBottom,
-                                    isBookmatch = isBookmatch
-                                )
-                                name = ""
-                                lStr = ""
-                                wStr = ""
-                                allowRotation = false
-                                matchAdjacentTo = ""
-                                miterLeft = false
-                                miterTop = false
-                                miterRight = false
-                                miterBottom = false
-                                isBookmatch = false
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth().testTag("add_part_submit_button")
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = "افزودن")
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("افزودن به لیست برش")
+                        if (editingPart != null) {
+                            OutlinedButton(
+                                onClick = { editingPart = null },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("انصراف")
+                            }
+                        }
+                        Button(
+                            onClick = {
+                                val l = lStr.toFloatOrNull()
+                                val w = wStr.toFloatOrNull()
+                                if (name.isNotEmpty() && l != null && w != null) {
+                                    val isAnyBookmatchSelected = bookmatchLeft || bookmatchTop || bookmatchRight || bookmatchBottom
+                                    if (editingPart == null) {
+                                        viewModel.addPart(
+                                            name = name,
+                                            length = l,
+                                            width = w,
+                                            allowRotation = allowRotation,
+                                            matchAdjacentTo = matchAdjacentTo,
+                                            miterLeft = miterLeft,
+                                            miterTop = miterTop,
+                                            miterRight = miterRight,
+                                            miterBottom = miterBottom,
+                                            isBookmatch = isAnyBookmatchSelected,
+                                            bookmatchLeft = bookmatchLeft,
+                                            bookmatchTop = bookmatchTop,
+                                            bookmatchRight = bookmatchRight,
+                                            bookmatchBottom = bookmatchBottom
+                                        )
+                                    } else {
+                                        viewModel.updatePart(
+                                            editingPart!!.copy(
+                                                name = name,
+                                                length = l,
+                                                width = w,
+                                                allowRotation = allowRotation,
+                                                matchAdjacentTo = matchAdjacentTo,
+                                                miterLeft = miterLeft,
+                                                miterTop = miterTop,
+                                                miterRight = miterRight,
+                                                miterBottom = miterBottom,
+                                                isBookmatch = isAnyBookmatchSelected,
+                                                bookmatchLeft = bookmatchLeft,
+                                                bookmatchTop = bookmatchTop,
+                                                bookmatchRight = bookmatchRight,
+                                                bookmatchBottom = bookmatchBottom
+                                            )
+                                        )
+                                        editingPart = null
+                                    }
+                                    if (editingPart == null) {
+                                        name = ""
+                                        lStr = ""
+                                        wStr = ""
+                                        allowRotation = false
+                                        matchAdjacentTo = ""
+                                        miterLeft = false
+                                        miterTop = false
+                                        miterRight = false
+                                        miterBottom = false
+                                        bookmatchLeft = false
+                                        bookmatchTop = false
+                                        bookmatchRight = false
+                                        bookmatchBottom = false
+                                    }
+                                }
+                            },
+                            modifier = Modifier.weight(1.5f).testTag("add_part_submit_button")
+                        ) {
+                            Icon(if (editingPart == null) Icons.Default.Add else Icons.Default.Edit, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(if (editingPart == null) "افزودن به لیست برش" else "ثبت تغییرات")
+                        }
                     }
                 }
             }
@@ -1209,7 +1312,11 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
             }
         } else {
             items(parts) { part ->
-                PartRowItem(part = part, onDelete = { viewModel.removePart(part.id) })
+                PartRowItem(
+                    part = part,
+                    onDelete = { viewModel.removePart(part.id) },
+                    onEdit = { editingPart = part }
+                )
             }
         }
 
@@ -1218,7 +1325,7 @@ fun PartsListTab(viewModel: StoneCutViewModel, parts: List<Part>) {
 }
 
 @Composable
-fun PartRowItem(part: Part, onDelete: () -> Unit) {
+fun PartRowItem(part: Part, onDelete: () -> Unit, onEdit: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -1294,10 +1401,15 @@ fun PartRowItem(part: Part, onDelete: () -> Unit) {
                             )
                         }
 
-                        if (part.isBookmatch) {
+                        val bmSides = mutableListOf<String>()
+                        if (part.bookmatchLeft) bmSides.add("چپ")
+                        if (part.bookmatchTop) bmSides.add("بالا")
+                        if (part.bookmatchRight) bmSides.add("راست")
+                        if (part.bookmatchBottom) bmSides.add("پایین")
+                        if (bmSides.isNotEmpty()) {
                             SuggestionChip(
                                 onClick = {},
-                                label = { Text("بوک‌مچ 🦋", fontSize = 10.sp) },
+                                label = { Text("بوک‌مچ: ${bmSides.joinToString("، ")}", fontSize = 10.sp) },
                                 modifier = Modifier.scale(0.85f),
                                 colors = SuggestionChipDefaults.suggestionChipColors(
                                     containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
@@ -1324,8 +1436,23 @@ fun PartRowItem(part: Part, onDelete: () -> Unit) {
                 }
             }
 
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = "حذف قطعه", tint = MaterialTheme.colorScheme.error)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onEdit) {
+                    Icon(
+                        Icons.Default.Edit,
+                        contentDescription = "ویرایش قطعه",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "حذف قطعه",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
         }
     }
@@ -1642,7 +1769,7 @@ fun StoneLayoutCanvas(layout: SlabLayout, diskThickness: Float, trimMargin: Floa
             val drawMiterRight = if (part.isRotated) part.part.miterTop else part.part.miterRight
             val drawMiterBottom = if (part.isRotated) part.part.miterRight else part.part.miterBottom
 
-            val miterHatchColor = Color(0xFFEF4444) // Bright red for miter cut highlight
+            val miterHatchColor = Color.Black // Black hatching for miter as requested
 
             if (drawMiterLeft) {
                 val hatchSize = 8.dp.toPx()
@@ -1733,6 +1860,71 @@ fun StoneLayoutCanvas(layout: SlabLayout, diskThickness: Float, trimMargin: Floa
                     start = Offset(px, py + ph),
                     end = Offset(px + pw, py + ph),
                     strokeWidth = 3.dp.toPx()
+                )
+            }
+
+            // Draw Bookmatch Double Orange Lines if enabled
+            val drawBookmatchLeft = if (part.isRotated) part.part.bookmatchBottom else part.part.bookmatchLeft
+            val drawBookmatchTop = if (part.isRotated) part.part.bookmatchLeft else part.part.bookmatchTop
+            val drawBookmatchRight = if (part.isRotated) part.part.bookmatchTop else part.part.bookmatchRight
+            val drawBookmatchBottom = if (part.isRotated) part.part.bookmatchRight else part.part.bookmatchBottom
+
+            val bmHatchColor = Color(0xFFFF9800) // Beautiful bright orange
+
+            if (drawBookmatchLeft) {
+                drawLine(
+                    color = bmHatchColor,
+                    start = Offset(px + 1.dp.toPx(), py),
+                    end = Offset(px + 1.dp.toPx(), py + ph),
+                    strokeWidth = 2.dp.toPx()
+                )
+                drawLine(
+                    color = bmHatchColor,
+                    start = Offset(px + 4.dp.toPx(), py),
+                    end = Offset(px + 4.dp.toPx(), py + ph),
+                    strokeWidth = 2.dp.toPx()
+                )
+            }
+            if (drawBookmatchRight) {
+                drawLine(
+                    color = bmHatchColor,
+                    start = Offset(px + pw - 1.dp.toPx(), py),
+                    end = Offset(px + pw - 1.dp.toPx(), py + ph),
+                    strokeWidth = 2.dp.toPx()
+                )
+                drawLine(
+                    color = bmHatchColor,
+                    start = Offset(px + pw - 4.dp.toPx(), py),
+                    end = Offset(px + pw - 4.dp.toPx(), py + ph),
+                    strokeWidth = 2.dp.toPx()
+                )
+            }
+            if (drawBookmatchTop) {
+                drawLine(
+                    color = bmHatchColor,
+                    start = Offset(px, py + 1.dp.toPx()),
+                    end = Offset(px + pw, py + 1.dp.toPx()),
+                    strokeWidth = 2.dp.toPx()
+                )
+                drawLine(
+                    color = bmHatchColor,
+                    start = Offset(px, py + 4.dp.toPx()),
+                    end = Offset(px + pw, py + 4.dp.toPx()),
+                    strokeWidth = 2.dp.toPx()
+                )
+            }
+            if (drawBookmatchBottom) {
+                drawLine(
+                    color = bmHatchColor,
+                    start = Offset(px, py + ph - 1.dp.toPx()),
+                    end = Offset(px + pw, py + ph - 1.dp.toPx()),
+                    strokeWidth = 2.dp.toPx()
+                )
+                drawLine(
+                    color = bmHatchColor,
+                    start = Offset(px, py + ph - 4.dp.toPx()),
+                    end = Offset(px + pw, py + ph - 4.dp.toPx()),
+                    strokeWidth = 2.dp.toPx()
                 )
             }
 
